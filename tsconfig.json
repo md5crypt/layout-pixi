@@ -19,6 +19,8 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true
+		"noFallthroughCasesInSwitch": true,
+		"preserveSymlinks": true,
+		"allowSyntheticDefaultImports": true
 	}
 }

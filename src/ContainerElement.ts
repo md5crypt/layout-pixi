@@ -5,8 +5,8 @@ import { Rectangle } from "@pixi/math"
 export class ContainerElement extends BaseElement {
 	public readonly handle!: Container
 
-	constructor(name?: string, config?: BaseConfig, spawner = () => new Container()) {
-		super(spawner(), name, config)
+	constructor(name?: string, config?: BaseConfig, handle?: Container) {
+		super(handle || new Container(), name, config)
 	}
 
 	public set interactive(value: boolean) {

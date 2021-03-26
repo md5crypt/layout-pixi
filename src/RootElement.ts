@@ -1,11 +1,12 @@
-import { BaseElement } from "./BaseElement"
+import { BaseElement, BaseConfig } from "./BaseElement"
 import { Container } from "@pixi/display"
 
 export class RootElement extends BaseElement {
 	public readonly handle!: Container
 
-	public constructor() {
-		super(new Container(), "@root")
+	public constructor(config?: BaseConfig) {
+		super(new Container(), "@root", config)
+		this.updateConfig({ volatile: true })
 	}
 
 	protected onUpdate() {

@@ -2,7 +2,6 @@ import { BaseElement, BaseConfig, layoutFactory } from "./BaseElement"
 
 import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
-import { Container } from "@pixi/display"
 import { Sprite } from "@pixi/sprite"
 
 type ScalingType = "none" | "fixed" | "stretch" | "contain"
@@ -11,20 +10,18 @@ export interface SpriteElementConfig extends BaseConfig {
 	image?: Texture
 	scaling?: ScalingType
 	tint?: number
-	container?: boolean
-	slices?: number[]
 	crop?: number[]
 }
 
 export class SpriteElement extends BaseElement {
-	public readonly sprite: Sprite
+	public readonly handle!: Sprite
 	private scaling: ScalingType
 	private texture: Texture
 
 	public crop(rect: number[]) {
 		const texture = this.texture
 		if (texture.noFrame) {
-			this.sprite.texture = new Texture(
+			this.handle.texture = new Texture(
 				texture.baseTexture,
 				new Rectangle(
 					rect[0],
@@ -34,7 +31,7 @@ export class SpriteElement extends BaseElement {
 				)
 			)
 		} else {
-			this.sprite.texture = new Texture(
+			this.handle.texture = new Texture(
 				texture.baseTexture,
 				new Rectangle(
 					texture.frame.x + rect[0],
@@ -58,21 +55,14 @@ export class SpriteElement extends BaseElement {
 		}
 	}
 
-	constructor(name?: string, config?: SpriteElementConfig, spawner = (texture: Texture) => new Sprite(texture)) {
-		let texture = config?.image || Texture.WHITE
-		const sprite = spawner(texture)
-		let handle: Container = sprite
-		if (config?.container) {
-			handle = new Container()
-			sprite.zIndex = -Infinity
-			handle.addChild(sprite)
-		}
-		super(handle, name, config)
+	constructor(name?: string, config?: SpriteElementConfig, handle?: Sprite) {
+		const texture = config?.image || Texture.WHITE
+		super(handle || new Sprite(texture), name, config)
+		this.handle.anchor.set(0.5, 0.5)
 		this.texture = texture
-		this.sprite = sprite
 		this.scaling = "none"
 		if (config) {
-			(config.tint !== undefined) && (this.sprite.tint = config.tint)
+			(config.tint !== undefined) && (this.handle.tint = config.tint)
 			config.scaling && (this.scaling = config.scaling)
 			if (config.crop) {
 				this.crop(config.crop)
@@ -83,43 +73,45 @@ export class SpriteElement extends BaseElement {
 	public set image(texture: Texture | null) {
 		if (this.texture != texture) {
 			this.texture = texture || Texture.WHITE
-			this.sprite.texture = this.texture
+			this.handle.texture = this.texture
 			this.setDirty()
 		}
 	}
 
+	public set tint(value: number) {
+		this.handle.tint = value
+	}
+
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.set(this.left + this.width / 2, this.top + this.height / 2)
-		if (this.handle instanceof Sprite) {
-			this.handle.anchor.set(0.5, 0.5)
-		} else {
-			this.handle.pivot.set(this.width / 2, this.height / 2)
-		}
+		this.handle.position.set(
+			this.config.padding.left + this.left + this.innerWidth / 2,
+			this.config.padding.top + this.top + this.innerHeight / 2
+		)
 		switch (this.scaling) {
 			case "stretch":
-				this.sprite.width = this.width
-				this.sprite.height = this.height
+				this.handle.width = this.innerWidth
+				this.handle.height = this.innerHeight
 				break
 			case "fixed":
 			case "contain":
-				const elementWidth = this.width
-				const elementHeight = this.height
+				const elementWidth = this.innerWidth
+				const elementHeight = this.innerHeight
 				const elementRatio = elementWidth / elementHeight
 				const textureWidth = this.texture.width
 				const textureHeight = this.texture.height
 				const textureRatio = textureWidth / textureHeight
 				if (this.scaling == "fixed") {
 					if (elementRatio < textureRatio) {
-						this.sprite.width = elementWidth
-						this.sprite.height = elementWidth / textureRatio
+						this.handle.width = elementWidth
+						this.handle.height = elementWidth / textureRatio
 					} else {
-						this.sprite.width = elementHeight * textureRatio
-						this.sprite.height = elementHeight
+						this.handle.width = elementHeight * textureRatio
+						this.handle.height = elementHeight
 					}
 				} else {
-					this.sprite.width = elementWidth
-					this.sprite.height = elementHeight
+					this.handle.width = elementWidth
+					this.handle.height = elementHeight
 					if (elementRatio < textureRatio) {
 						const diff = Math.abs((textureHeight * elementRatio) - textureWidth)
 						this.crop([diff / 2, 0, diff / 2, 0])
@@ -135,11 +127,11 @@ export class SpriteElement extends BaseElement {
 	}
 
 	public get contentHeight() {
-		return this.sprite.texture.height
+		return this.handle.texture.height
 	}
 
 	public get contentWidth() {
-		return this.sprite.texture.width
+		return this.handle.texture.width
 	}
 }
 

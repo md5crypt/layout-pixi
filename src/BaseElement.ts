@@ -106,7 +106,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 			)
 			graphics.endFill()
 			if (this.handle.mask) {
-				this.handle.removeChild(this.handle.mask as Graphics)
+				this.handle.removeChild(this.handle.mask as any)
 			}
 			this.handle.addChild(graphics)
 			this.handle.mask = graphics
