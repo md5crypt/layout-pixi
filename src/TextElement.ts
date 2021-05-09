@@ -16,7 +16,7 @@ export class TextElement extends BaseElement {
 	private textRect: [number, number] | null
 
 	public constructor(name?: string, config?: TextElementConfig) {
-		super(new Text(""), name, config)
+		super(new Text(""), "text", name, config)
 		this.textRect = null
 		this.style = {}
 		this.handle.roundPixels = TextElement.roundPixels
@@ -67,7 +67,7 @@ export class TextElement extends BaseElement {
 
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.set(this.left + this.width / 2, this.top + this.height / 2)
+		this.handle.position.set(this.innerLeft + this.width / 2, this.innerTop + this.height / 2)
 		this.handle.pivot.set(this.width / 2, this.height / 2)
 		this.handle.x += this.config.padding.left
 		this.handle.y += this.config.padding.top

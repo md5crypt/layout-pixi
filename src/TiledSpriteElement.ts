@@ -4,7 +4,7 @@ import { Texture } from "@pixi/core"
 import { TilingSprite } from "@pixi/sprite-tiling"
 
 export interface TiledSpriteElementConfig extends BaseConfig {
-	image?: Texture
+	image?: Texture | string
 	tint?: number
 }
 
@@ -12,15 +12,15 @@ export class TiledSpriteElement extends BaseElement {
 	public readonly handle!: TilingSprite
 
 	constructor(name?: string, config?: TiledSpriteElementConfig) {
-		super(new TilingSprite(config?.image || Texture.WHITE), name, config)
+		super(new TilingSprite(BaseElement.resolveAsset(config?.image)), "sprite-tiled", name, config)
 		this.handle.anchor.set(0.5, 0.5)
 		if (config) {
 			(config.tint !== undefined) && (this.handle.tint = config.tint)
 		}
 	}
 
-	public set image(value: Texture | null) {
-		const texture = value || Texture.WHITE
+	public set image(value: Texture | null | string) {
+		const texture = BaseElement.resolveAsset(value)
 		if (this.handle.texture != texture) {
 			this.handle.texture = texture
 			this.setDirty()
@@ -34,8 +34,8 @@ export class TiledSpriteElement extends BaseElement {
 	protected onUpdate() {
 		super.onUpdate()
 		this.handle.position.set(
-			this.config.padding.left + this.left + this.innerWidth / 2,
-			this.config.padding.top + this.top + this.innerHeight / 2
+			this.config.padding.left + this.innerLeft + this.innerWidth / 2,
+			this.config.padding.top + this.innerTop + this.innerHeight / 2
 		)
 		this.handle.width = this.innerWidth
 		this.handle.height = this.innerHeight

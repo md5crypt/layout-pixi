@@ -2,6 +2,7 @@ import { LayoutElement, LayoutFactory, LayoutElementJson as BaseLayoutElementJso
 import { ElementTypes } from "./ElementTypes"
 import { Container } from "@pixi/display"
 import { Graphics } from "@pixi/graphics"
+import { Texture } from "@pixi/core"
 import type { } from "@pixi/interaction"
 
 export type LayoutElementJson = BaseLayoutElementJson<Typify<ElementTypes>>
@@ -15,6 +16,7 @@ export interface BaseConfig {
 	rotation?: number
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
+	scale?: number
 }
 
 export abstract class BaseElement extends LayoutElement<BaseElement> {
@@ -22,8 +24,20 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 	private hidden: boolean
 	private mask?: boolean
 
-	protected constructor(handle: Container, name?: string, config?: BaseConfig) {
-		super(name)
+	public static assetResolver?: (key: string) => Texture
+
+	protected static resolveAsset(asset: string | Texture | undefined | null) {
+		if (typeof asset == "string") {
+			if (BaseElement.assetResolver) {
+				return BaseElement.assetResolver(asset)
+			}
+			throw new Error("string has been passed as image and BaseElement.assetResolver has not been defined")
+		}
+		return asset || Texture.WHITE
+	}
+
+	protected constructor(handle: Container, type: string, name?: string, config?: BaseConfig) {
+		super(type, name)
 		this.handle = handle
 		this.hidden = false
 		if (config) {
@@ -60,8 +74,16 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		}
 	}
 
+	public get interactive() {
+		return this.handle.interactive || false
+	}
+
 	public set interactive(value: boolean) {
 		this.handle.interactive = value
+	}
+
+	public get interactiveChildren() {
+		return this.handle.interactiveChildren || false
 	}
 
 	public set interactiveChildren(value: boolean) {
@@ -76,8 +98,45 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return this.handle.height
 	}
 
+	public get scale() {
+		return 1
+	}
+
 	public on(event: string, callback: Function) {
 		this.handle.on(event, callback as any)
+	}
+
+	public get globalScale() {
+		let scale = this.scale
+		let parent = this._parent
+		while (parent) {
+			scale *= parent.scale
+			parent = parent._parent
+		}
+		return scale
+	}
+
+	public get globalBoundingBox() {
+		const result = {
+			top: this.innerTop,
+			left: this.innerLeft,
+			width: this.width * this.scale,
+			height: this.height * this.scale
+		}
+		let parent = this._parent
+		while (parent) {
+			if (parent.scale) {
+				result.top = (result.top * parent.scale) + parent.innerTop
+				result.left = (result.left * parent.scale) + parent.innerLeft
+				result.width *= parent.scale
+				result.height *= parent.scale
+			} else {
+				result.top += parent.innerTop
+				result.left += parent.innerLeft
+			}
+			parent = parent._parent
+		}
+		return result
 	}
 
 	protected onRemoveElement(index: number) {

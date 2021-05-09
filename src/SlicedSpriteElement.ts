@@ -4,7 +4,7 @@ import { Texture } from "@pixi/core"
 import { NineSlicePlane } from "@pixi/mesh-extras"
 
 export interface SlicedSpriteElementConfig extends BaseConfig {
-	image?: Texture
+	image?: Texture | string
 	tint?: number
 	slices?: number[]
 }
@@ -13,14 +13,14 @@ export class SlicedSpriteElement extends BaseElement {
 	public readonly handle!: NineSlicePlane
 
 	constructor(name?: string, config?: SlicedSpriteElementConfig) {
-		super(new NineSlicePlane(config?.image || Texture.WHITE, ...(config?.slices ?? [])), name, config)
+		super(new NineSlicePlane(BaseElement.resolveAsset(config?.image), ...(config?.slices ?? [])), "sprite-sliced", name, config)
 		if (config) {
 			(config.tint !== undefined) && (this.handle.tint = config.tint)
 		}
 	}
 
-	public set image(value: Texture | null) {
-		const texture = value || Texture.WHITE
+	public set image(value: Texture | string | null) {
+		const texture = BaseElement.resolveAsset(value)
 		if (this.handle.texture != texture) {
 			this.handle.texture = texture
 			this.setDirty()
@@ -34,8 +34,8 @@ export class SlicedSpriteElement extends BaseElement {
 	protected onUpdate() {
 		super.onUpdate()
 		this.handle.position.set(
-			this.config.padding.left + this.left + this.innerWidth / 2,
-			this.config.padding.top + this.top + this.innerHeight / 2
+			this.config.padding.left + this.innerLeft + this.innerWidth / 2,
+			this.config.padding.top + this.innerTop + this.innerHeight / 2
 		)
 		this.handle.pivot.set(this.innerWidth / 2, this.innerHeight / 2)
 		this.handle.width = this.innerWidth

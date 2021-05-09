@@ -11,7 +11,7 @@ export class GraphicElement extends BaseElement {
 	public draw?: (self: GraphicElement) => void
 
 	constructor(name?: string, config?: GraphicElementConfig) {
-		super(new Graphics(), name, config)
+		super(new Graphics(), "graphic", name, config)
 		if (config && config.draw) {
 			this.draw = config.draw
 		}
@@ -22,7 +22,7 @@ export class GraphicElement extends BaseElement {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
-		this.handle.position.set(this.left + this.width / 2, this.top + this.height / 2)
+		this.handle.position.set(this.innerLeft + this.width / 2, this.innerTop + this.height / 2)
 		this.handle.pivot.set(this.width / 2, this.height / 2)
 		this.handle.clear()
 		if (this.draw) {

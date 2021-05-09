@@ -2,16 +2,31 @@ import { BaseElement, BaseConfig, layoutFactory } from "./BaseElement"
 import { Container } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
 
+export interface ContainerElementConfig extends BaseConfig {
+	scale?: number
+}
+
 export class ContainerElement extends BaseElement {
 	public readonly handle!: Container
+	private _scale: number
 
-	constructor(name?: string, config?: BaseConfig, handle?: Container) {
-		super(handle || new Container(), name, config)
+	constructor(name?: string, config?: ContainerElementConfig, handle?: Container) {
+		super(handle || new Container(), "container", name, config)
+		this._scale = 1
+		if (config?.scale) {
+			this.scale = config.scale
+		}
 	}
 
 	public set interactive(value: boolean) {
 		super.interactive = value
-		this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+		if (this.widthReady && this.heightReady) {
+			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+		}
+	}
+
+	public get interactive() {
+		return super.interactive
 	}
 
 	protected onUpdate() {
@@ -19,8 +34,17 @@ export class ContainerElement extends BaseElement {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
-		this.handle.position.set(this.left + this.width / 2, this.top + this.height / 2)
+		this.handle.position.set(this.innerLeft + this.width / 2, this.innerTop + this.height / 2)
 		this.handle.pivot.set(this.width / 2, this.height / 2)
+	}
+
+	public set scale(value: number) {
+		this._scale = value
+		this.handle.scale.set(value)
+	}
+
+	public get scale() {
+		return this._scale
 	}
 }
 
@@ -28,6 +52,6 @@ layoutFactory.register("container", (name, config) => new ContainerElement(name,
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		container: {config: BaseConfig, element: ContainerElement}
+		container: {config: ContainerElementConfig, element: ContainerElement}
 	}
 }

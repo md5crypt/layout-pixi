@@ -7,7 +7,7 @@ import { Sprite } from "@pixi/sprite"
 type ScalingType = "none" | "fixed" | "stretch" | "contain"
 
 export interface SpriteElementConfig extends BaseConfig {
-	image?: Texture
+	image?: Texture | string
 	scaling?: ScalingType
 	tint?: number
 	crop?: number[]
@@ -56,8 +56,8 @@ export class SpriteElement extends BaseElement {
 	}
 
 	constructor(name?: string, config?: SpriteElementConfig, handle?: Sprite) {
-		const texture = config?.image || Texture.WHITE
-		super(handle || new Sprite(texture), name, config)
+		const texture = BaseElement.resolveAsset(config?.image)
+		super(handle || new Sprite(texture), "sprite", name, config)
 		this.handle.anchor.set(0.5, 0.5)
 		this.texture = texture
 		this.scaling = "none"
@@ -70,9 +70,10 @@ export class SpriteElement extends BaseElement {
 		}
 	}
 
-	public set image(texture: Texture | null) {
+	public set image(value: Texture | null | string) {
+		const texture = BaseElement.resolveAsset(value)
 		if (this.texture != texture) {
-			this.texture = texture || Texture.WHITE
+			this.texture = texture
 			this.handle.texture = this.texture
 			this.setDirty()
 		}
@@ -85,8 +86,8 @@ export class SpriteElement extends BaseElement {
 	protected onUpdate() {
 		super.onUpdate()
 		this.handle.position.set(
-			this.config.padding.left + this.left + this.innerWidth / 2,
-			this.config.padding.top + this.top + this.innerHeight / 2
+			this.config.padding.left + this.innerLeft + this.innerWidth / 2,
+			this.config.padding.top + this.innerTop + this.innerHeight / 2
 		)
 		switch (this.scaling) {
 			case "stretch":
