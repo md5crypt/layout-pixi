@@ -19,9 +19,15 @@ export class ContainerElement extends BaseElement {
 	}
 
 	public set interactive(value: boolean) {
-		super.interactive = value
-		if (this.widthReady && this.heightReady) {
-			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+		if (super.interactive != value) {
+			super.interactive = value
+			if (value) {
+				if (this.widthReady && this.heightReady) {
+					this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+				} else {
+					this.setDirty()
+				}
+			}
 		}
 	}
 
@@ -34,13 +40,17 @@ export class ContainerElement extends BaseElement {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
-		this.handle.position.set(this.innerLeft + this.width / 2, this.innerTop + this.height / 2)
+		this.handle.position.set(
+			this.innerLeft + this.scale * (this.width / 2),
+			this.innerTop + this.scale * (this.height / 2)
+		)
 		this.handle.pivot.set(this.width / 2, this.height / 2)
 	}
 
 	public set scale(value: number) {
 		this._scale = value
 		this.handle.scale.set(value)
+		this.setDirty()
 	}
 
 	public get scale() {

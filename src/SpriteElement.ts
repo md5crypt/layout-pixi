@@ -4,19 +4,23 @@ import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
 import { Sprite } from "@pixi/sprite"
 
-type ScalingType = "none" | "fixed" | "stretch" | "contain"
+type ScalingType = "none" | "contain" | "stretch" | "cover"
 
 export interface SpriteElementConfig extends BaseConfig {
 	image?: Texture | string
 	scaling?: ScalingType
+	verticalAlign?: "top" | "middle" | "bottom"
+	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
 	crop?: number[]
 }
 
 export class SpriteElement extends BaseElement {
 	public readonly handle!: Sprite
-	private scaling: ScalingType
+	private _scaling: ScalingType
 	private texture: Texture
+	private _verticalAlign: "top" | "middle" | "bottom"
+	private _horizontalAlign: "left" | "center" | "right"
 
 	public crop(rect: number[]) {
 		const texture = this.texture
@@ -60,10 +64,14 @@ export class SpriteElement extends BaseElement {
 		super(handle || new Sprite(texture), "sprite", name, config)
 		this.handle.anchor.set(0.5, 0.5)
 		this.texture = texture
-		this.scaling = "none"
+		this._scaling = "none"
+		this._horizontalAlign = "left"
+		this._verticalAlign = "top"
 		if (config) {
 			(config.tint !== undefined) && (this.handle.tint = config.tint)
-			config.scaling && (this.scaling = config.scaling)
+			config.scaling && (this._scaling = config.scaling)
+			config.horizontalAlign && (this._horizontalAlign = config.horizontalAlign)
+			config.verticalAlign && (this._verticalAlign = config.verticalAlign)
 			if (config.crop) {
 				this.crop(config.crop)
 			}
@@ -83,48 +91,100 @@ export class SpriteElement extends BaseElement {
 		this.handle.tint = value
 	}
 
+	public set scaling(value: ScalingType) {
+		this._scaling = value
+		this.handle.texture = this.texture
+		this.handle.scale.set(1)
+		this.setDirty()
+	}
+
+	public set verticalAlign(value: "top" | "middle" | "bottom") {
+		this._verticalAlign = value
+		this.handle.texture = this.texture
+		this.setDirty()
+	}
+
+	public set horizontalAlign(value: "left" | "center" | "right") {
+		this._horizontalAlign = value
+		this.handle.texture = this.texture
+		this.setDirty()
+	}
+
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.set(
-			this.config.padding.left + this.innerLeft + this.innerWidth / 2,
-			this.config.padding.top + this.innerTop + this.innerHeight / 2
-		)
-		switch (this.scaling) {
+		let left = this.config.padding.left + this.innerLeft + this.innerWidth / 2
+		let top = this.config.padding.top + this.innerTop + this.innerHeight / 2
+		switch (this._scaling) {
 			case "stretch":
 				this.handle.width = this.innerWidth
 				this.handle.height = this.innerHeight
 				break
-			case "fixed":
 			case "contain":
+			case "cover": {
 				const elementWidth = this.innerWidth
 				const elementHeight = this.innerHeight
 				const elementRatio = elementWidth / elementHeight
 				const textureWidth = this.texture.width
 				const textureHeight = this.texture.height
 				const textureRatio = textureWidth / textureHeight
-				if (this.scaling == "fixed") {
+				if (this._scaling == "contain") {
 					if (elementRatio < textureRatio) {
+						const height = elementWidth / textureRatio
 						this.handle.width = elementWidth
-						this.handle.height = elementWidth / textureRatio
+						this.handle.height = height
+						if (this._verticalAlign == "top") {
+							top -= (elementHeight - height) / 2
+						} else if (this._verticalAlign == "bottom") {
+							top += (elementHeight - height) / 2
+						}
 					} else {
-						this.handle.width = elementHeight * textureRatio
+						const width = elementHeight * textureRatio
+						this.handle.width = width
 						this.handle.height = elementHeight
+						if (this._horizontalAlign == "left") {
+							left -= (elementWidth - width) / 2
+						} else if (this._horizontalAlign == "right") {
+							left += (elementWidth - width) / 2
+						}
 					}
 				} else {
 					this.handle.width = elementWidth
 					this.handle.height = elementHeight
 					if (elementRatio < textureRatio) {
 						const diff = Math.abs((textureHeight * elementRatio) - textureWidth)
-						this.crop([diff / 2, 0, diff / 2, 0])
+						if (this._horizontalAlign == "left") {
+							this.crop([0, 0, diff, 0])
+						} else if (this._horizontalAlign == "center") {
+							this.crop([diff / 2, 0, diff / 2, 0])
+						} else {
+							this.crop([diff, 0, 0, 0])
+						}
 					} else {
 						const diff = Math.abs((textureWidth / elementRatio) - textureHeight)
-						this.crop([0, diff / 2, 0, diff / 2])
+						if (this._verticalAlign == "top") {
+							this.crop([0, 0, 0, diff])
+						} else if (this._verticalAlign == "middle") {
+							this.crop([0, diff / 2, 0, diff / 2])
+						} else {
+							this.crop([0, diff, 0, 0])
+						}
 					}
 				}
 				break
-			default:
+			} default:
+				if (this._verticalAlign == "top") {
+					top -= (this.innerHeight - this.texture.height) / 2
+				} else if (this._verticalAlign == "bottom") {
+					top += (this.innerHeight - this.texture.height) / 2
+				}
+				if (this._horizontalAlign == "left") {
+					left -= (this.innerWidth - this.texture.width) / 2
+				} else if (this._horizontalAlign == "right") {
+					left += (this.innerWidth - this.texture.width) / 2
+				}
 				break
 		}
+		this.handle.position.set(left, top)
 	}
 
 	public get contentHeight() {

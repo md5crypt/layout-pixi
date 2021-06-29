@@ -3,6 +3,8 @@ import { Text, TextStyle, TextMetrics, ITextStyle } from "@pixi/text"
 
 export interface TextElementConfig extends BaseConfig {
 	text?: string
+	fit?: boolean
+	verticalAlign?: "top" | "bottom" | "middle"
 	style?: Partial<ITextStyle>
 }
 
@@ -14,6 +16,9 @@ export class TextElement extends BaseElement {
 	private style: Partial<ITextStyle>
 	private text!: string
 	private textRect: [number, number] | null
+	private _fit: boolean
+	private _verticalAlign: "top" | "bottom" | "middle"
+	private lastSize: [number, number]
 
 	public constructor(name?: string, config?: TextElementConfig) {
 		super(new Text(""), "text", name, config)
@@ -21,20 +26,47 @@ export class TextElement extends BaseElement {
 		this.style = {}
 		this.handle.roundPixels = TextElement.roundPixels
 		this.handle.resolution = TextElement.resolution
+		this._fit = false
+		this._verticalAlign = "top"
+		this.lastSize = [0, 0]
 		if (config) {
 			this.setText(config.text || "", config.style)
 			if (config.style) {
-				this.style = config.style
-				this.handle.style = config.style
+				this.style = {...config.style}
+				this.handle.style = this.style
 			}
 			if (config.text) {
 				this.text = config.text
 				this.handle.text = this.text
 			}
+			if (config.fit) {
+				this._fit = true
+			}
+			if (config.verticalAlign) {
+				this._verticalAlign = config.verticalAlign
+			}
+		}
+	}
+
+	public setDirty(forceFontRedraw?: boolean) {
+		super.setDirty()
+		const clearTextRect = (
+			forceFontRedraw ||
+			(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
+			(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
+		)
+		if (clearTextRect) {
+			this.textRect = null
 		}
 	}
 
 	private meausreText() {
+		if (this.style.wordWrap) {
+			if (this.style.wordWrapWidth != this.width) {
+				this.style.wordWrapWidth = this.width
+				this.handle.style.wordWrapWidth = this.width
+			}
+		}
 		const textMetrics = TextMetrics.measureText(this.text, new TextStyle(this.handle.style))
 		this.textRect = [
 			textMetrics.width,
@@ -44,6 +76,7 @@ export class TextElement extends BaseElement {
 
 	public set resolution(value: number) {
 		this.handle.resolution = value
+		this.setDirty(true)
 	}
 
 	public get contentHeight() {
@@ -60,17 +93,95 @@ export class TextElement extends BaseElement {
 		return this.textRect![0]
 	}
 
-	protected setDirty() {
-		super.setDirty()
-		this.textRect = null
+	public get fit() {
+		return this._fit
+	}
+
+	public set fit(value: boolean) {
+		if (this._fit != value) {
+			this._fit = value
+			if (!value) {
+				this.handle.style.fontSize = this.style.fontSize
+			}
+			this.setDirty(true)
+		}
+	}
+
+	public get verticalAlign() {
+		return this._verticalAlign
+	}
+
+	public set verticalAlign(value: "top" | "bottom" | "middle") {
+		if (this._verticalAlign != value) {
+			this._verticalAlign = value
+			this.setDirty()
+		}
+	}
+
+	private fitText(width: number, height: number) {
+		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
+		if (scale < 1) {
+			this.handle.style.fontSize = Math.max(1, Math.floor(this.handle.style.fontSize as number * scale))
+			this.meausreText()
+		}
+	}
+
+	private fitWrappedText(width: number, height: number) {
+		let upperBound = this.style.fontSize as number
+		let lowerBound = upperBound * Math.min(width / this.textRect![0], height / this.textRect![1])
+		let lastSize = upperBound
+		if (lowerBound >= upperBound) {
+			return
+		}
+		for (let i = 0; i < 8; i += 1) {
+			const currentSize = Math.round((upperBound + lowerBound) / 2)
+			if (currentSize == lastSize) {
+				return
+			}
+			lastSize = currentSize
+			this.handle.style.fontSize = currentSize
+			this.meausreText()
+			const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
+			if (scale > 1) {
+				lowerBound = currentSize
+				upperBound = currentSize * scale
+			} else {
+				upperBound = currentSize
+				lowerBound = currentSize * scale
+			}
+		}
+		this.fitText(width, height)
 	}
 
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.set(this.innerLeft + this.width / 2, this.innerTop + this.height / 2)
-		this.handle.pivot.set(this.width / 2, this.height / 2)
+		const width = this.width
+		const height = this.height
+		if (this._fit && !this.textRect) {
+			this.handle.style.fontSize = this.style.fontSize
+			this.meausreText()
+			if (this.style.wordWrap) {
+				this.fitWrappedText(width, height)
+			} else {
+				this.fitText(width, height)
+			}
+		}
+		this.lastSize[0] != this.width
+		this.lastSize[1] != this.height
+		this.handle.position.set(this.innerLeft + width / 2, this.innerTop + height / 2)
+		this.handle.pivot.set(width / 2, height / 2)
 		this.handle.x += this.config.padding.left
 		this.handle.y += this.config.padding.top
+		if (this._verticalAlign == "middle") {
+			this.handle.y += (this.height - this.contentHeight) / 2
+		} else if (this._verticalAlign == "bottom") {
+			this.handle.y += (this.height - this.contentHeight)
+		}
+		if (this.style.align == "center") {
+			this.handle.x += (this.width - this.contentWidth) / 2
+		} else if (this.style.align == "right") {
+			this.handle.x += (this.width - this.contentWidth)
+		}
 	}
 
 	public setStyle(style?: Partial<ITextStyle>) {
@@ -78,33 +189,16 @@ export class TextElement extends BaseElement {
 			Object.assign(this.style, style)
 		}
 		this.handle.style = this.style
-		if (this.style.wordWrap && !this.style.wordWrapWidth) {
-			this.handle.style.wordWrapWidth = this._parent?.innerWidth
-		}
-		this.setDirty()
+		this.setDirty(true)
 	}
 
-	public setText(text: string, style?: Partial<ITextStyle>): void
-	public setText(text: string, fit?: boolean, style?: Partial<ITextStyle>): void
-	public setText(text: string, arg1?: boolean | Partial<ITextStyle>, arg2?: Partial<ITextStyle>) {
+	public setText(text: string, style?: Partial<ITextStyle>) {
 		this.text = text
 		this.handle.text = this.text
-		if (arg1 === true) {
-			this.setStyle(arg2)
-			this.fit()
-		} else {
-			this.setStyle(arg1 || arg2)
+		if (style) {
+			this.setStyle(style)
 		}
-	}
-
-	public fit() {
-		this.setStyle()
-		this.parent.update()
-		const scale = Math.min(this.parent.innerWidth / this.width, this.parent.innerHeight / this.height)
-		if (scale < 1) {
-			this.handle.style.fontSize = Math.floor((this.handle.style.fontSize as number) * scale)
-			this.setDirty()
-		}
+		this.setDirty(true)
 	}
 }
 

@@ -22,7 +22,7 @@ export interface BaseConfig {
 export abstract class BaseElement extends LayoutElement<BaseElement> {
 	public readonly handle: Container
 	private hidden: boolean
-	private mask?: boolean
+	private _mask?: boolean
 
 	public static assetResolver?: (key: string) => Texture
 
@@ -41,7 +41,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		this.handle = handle
 		this.hidden = false
 		if (config) {
-			this.mask = config.mask
+			this._mask = config.mask
 			this.handle.zIndex = config.zIndex || 0
 			config.sorted && (this.handle.sortableChildren = true)
 			config.interactive && (this.interactive = true)
@@ -139,6 +139,20 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return result
 	}
 
+	public set mask(value: boolean) {
+		if (this.mask != value) {
+			if (this.mask) {
+				if (this.handle.mask) {
+					this.handle.removeChild(this.handle.mask as Container)
+					this.handle.mask = null
+				}
+			} else {
+				this.setDirty()
+			}
+			this.mask = value
+		}
+	}
+
 	protected onRemoveElement(index: number) {
 		this.handle.removeChild(this.children[index].handle)
 	}
@@ -154,7 +168,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 
 	protected onUpdate() {
 		this.handle.visible = this.enabled && !this.hidden
-		if (this.mask) {
+		if (this._mask) {
 			const graphics = new Graphics()
 			graphics.beginFill(0xFFFFFF)
 			graphics.drawRect(
@@ -165,7 +179,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 			)
 			graphics.endFill()
 			if (this.handle.mask) {
-				this.handle.removeChild(this.handle.mask as any)
+				this.handle.removeChild(this.handle.mask as Container)
 			}
 			this.handle.addChild(graphics)
 			this.handle.mask = graphics
