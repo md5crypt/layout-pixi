@@ -168,20 +168,20 @@ export class TextElement extends BaseElement {
 		}
 		this.lastSize[0] != this.width
 		this.lastSize[1] != this.height
-		this.handle.position.set(this.innerLeft + width / 2, this.innerTop + height / 2)
 		this.handle.pivot.set(width / 2, height / 2)
-		this.handle.x += this.config.padding.left
-		this.handle.y += this.config.padding.top
+		let left = this.computedLeft
+		let top = this.computedTop
 		if (this._verticalAlign == "middle") {
-			this.handle.y += (this.height - this.contentHeight) / 2
+			top += (this.height - this.contentHeight) / 2
 		} else if (this._verticalAlign == "bottom") {
-			this.handle.y += (this.height - this.contentHeight)
+			top += (this.height - this.contentHeight)
 		}
 		if (this.style.align == "center") {
-			this.handle.x += (this.width - this.contentWidth) / 2
+			left += (this.width - this.contentWidth) / 2
 		} else if (this.style.align == "right") {
-			this.handle.x += (this.width - this.contentWidth)
+			left += (this.width - this.contentWidth)
 		}
+		this.handle.position.set(left, top)
 	}
 
 	public setStyle(style?: Partial<ITextStyle>) {

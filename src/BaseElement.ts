@@ -17,12 +17,14 @@ export interface BaseConfig {
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
 	scale?: number
+	anchor?: [number, number]
 }
 
 export abstract class BaseElement extends LayoutElement<BaseElement> {
 	public readonly handle: Container
 	private hidden: boolean
 	private _mask?: boolean
+	protected _anchor: [number, number]
 
 	public static assetResolver?: (key: string) => Texture
 
@@ -40,6 +42,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		super(type, name)
 		this.handle = handle
 		this.hidden = false
+		this._anchor = [0, 0]
 		if (config) {
 			this._mask = config.mask
 			this.handle.zIndex = config.zIndex || 0
@@ -48,7 +51,16 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 			config.alpha !== undefined && (this.alpha = config.alpha)
 			config.rotation && (this.rotation = config.rotation)
 			config.flipped && (this.flipped = config.flipped)
+			config.anchor && (this._anchor[0] = config.anchor[0], this._anchor[1] = config.anchor[1])
 		}
+	}
+
+	public get innerTop() {
+		return this._anchor[1] ? super.innerTop - this._anchor[1] * this.scale * this.height : super.innerTop
+	}
+
+	public get innerLeft() {
+		return this._anchor[0] ? super.innerLeft - this._anchor[0] * this.scale * this.width : super.innerLeft
 	}
 
 	public set alpha(value: number) {
@@ -153,6 +165,16 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		}
 	}
 
+	public setAnchor(x: number, y?: number) {
+		this._anchor[0] = x
+		this._anchor[1] = y === undefined ? x : y
+		this.setDirty()
+	}
+
+	public get anchor() {
+		return this._anchor as Readonly<[number, number]>
+	}
+
 	protected onRemoveElement(index: number) {
 		this.handle.removeChild(this.children[index].handle)
 	}
@@ -164,6 +186,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 			const position = this.handle.getChildIndex(this.children[index].handle)
 			this.handle.addChildAt(element.handle, position)
 		}
+	}
+
+	protected get computedLeft() {
+		return this.config.padding.left + this.innerLeft + this.innerWidth / 2
+	}
+
+	protected get computedTop() {
+		return this.config.padding.top + this.innerTop + this.innerHeight / 2
 	}
 
 	protected onUpdate() {

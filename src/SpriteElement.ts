@@ -94,7 +94,6 @@ export class SpriteElement extends BaseElement {
 	public set scaling(value: ScalingType) {
 		this._scaling = value
 		this.handle.texture = this.texture
-		this.handle.scale.set(1)
 		this.setDirty()
 	}
 
@@ -112,8 +111,8 @@ export class SpriteElement extends BaseElement {
 
 	protected onUpdate() {
 		super.onUpdate()
-		let left = this.config.padding.left + this.innerLeft + this.innerWidth / 2
-		let top = this.config.padding.top + this.innerTop + this.innerHeight / 2
+		let left = this.computedLeft
+		let top = this.computedTop
 		switch (this._scaling) {
 			case "stretch":
 				this.handle.width = this.innerWidth
@@ -130,8 +129,7 @@ export class SpriteElement extends BaseElement {
 				if (this._scaling == "contain") {
 					if (elementRatio < textureRatio) {
 						const height = elementWidth / textureRatio
-						this.handle.width = elementWidth
-						this.handle.height = height
+						this.handle.scale.set(height / textureHeight)
 						if (this._verticalAlign == "top") {
 							top -= (elementHeight - height) / 2
 						} else if (this._verticalAlign == "bottom") {
@@ -139,8 +137,7 @@ export class SpriteElement extends BaseElement {
 						}
 					} else {
 						const width = elementHeight * textureRatio
-						this.handle.width = width
-						this.handle.height = elementHeight
+						this.handle.scale.set(width / textureWidth)
 						if (this._horizontalAlign == "left") {
 							left -= (elementWidth - width) / 2
 						} else if (this._horizontalAlign == "right") {
@@ -148,10 +145,9 @@ export class SpriteElement extends BaseElement {
 						}
 					}
 				} else {
-					this.handle.width = elementWidth
-					this.handle.height = elementHeight
 					if (elementRatio < textureRatio) {
 						const diff = Math.abs((textureHeight * elementRatio) - textureWidth)
+						this.handle.scale.set(elementHeight / textureHeight)
 						if (this._horizontalAlign == "left") {
 							this.crop([0, 0, diff, 0])
 						} else if (this._horizontalAlign == "center") {
@@ -160,7 +156,8 @@ export class SpriteElement extends BaseElement {
 							this.crop([diff, 0, 0, 0])
 						}
 					} else {
-						const diff = Math.abs((textureWidth / elementRatio) - textureHeight)
+						const diff = (textureWidth / elementRatio) - textureHeight
+						this.handle.scale.set(elementWidth / textureWidth)
 						if (this._verticalAlign == "top") {
 							this.crop([0, 0, 0, diff])
 						} else if (this._verticalAlign == "middle") {
@@ -172,6 +169,7 @@ export class SpriteElement extends BaseElement {
 				}
 				break
 			} default:
+				this.handle.scale.set(1)
 				if (this._verticalAlign == "top") {
 					top -= (this.innerHeight - this.texture.height) / 2
 				} else if (this._verticalAlign == "bottom") {

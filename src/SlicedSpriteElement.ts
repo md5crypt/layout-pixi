@@ -33,10 +33,7 @@ export class SlicedSpriteElement extends BaseElement {
 
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.set(
-			this.config.padding.left + this.innerLeft + this.innerWidth / 2,
-			this.config.padding.top + this.innerTop + this.innerHeight / 2
-		)
+		this.handle.position.set(this.computedLeft, this.computedTop)
 		this.handle.pivot.set(this.innerWidth / 2, this.innerHeight / 2)
 		this.handle.width = this.innerWidth
 		this.handle.height = this.innerHeight
