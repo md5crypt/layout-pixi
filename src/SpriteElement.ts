@@ -146,7 +146,7 @@ export class SpriteElement extends BaseElement {
 					}
 				} else {
 					if (elementRatio < textureRatio) {
-						const diff = Math.abs((textureHeight * elementRatio) - textureWidth)
+						const diff = textureWidth - (textureHeight * elementRatio)
 						this.handle.scale.set(elementHeight / textureHeight)
 						if (this._horizontalAlign == "left") {
 							this.crop([0, 0, diff, 0])
@@ -156,7 +156,7 @@ export class SpriteElement extends BaseElement {
 							this.crop([diff, 0, 0, 0])
 						}
 					} else {
-						const diff = (textureWidth / elementRatio) - textureHeight
+						const diff = textureHeight - (textureWidth / elementRatio)
 						this.handle.scale.set(elementWidth / textureWidth)
 						if (this._verticalAlign == "top") {
 							this.crop([0, 0, 0, diff])
