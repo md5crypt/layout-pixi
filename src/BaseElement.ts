@@ -63,6 +63,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return this._anchor[0] ? super.innerLeft - this._anchor[0] * this.scale * this.width : super.innerLeft
 	}
 
+	public get zIndex() {
+		return this.handle.zIndex
+	}
+
+	public set zIndex(value: number) {
+		this.handle.zIndex = value
+	}
+
 	public set alpha(value: number) {
 		this.hidden = value === 0
 		this.handle.visible = value !== 0

@@ -101,7 +101,7 @@ export class TextElement extends BaseElement {
 		if (this._fit != value) {
 			this._fit = value
 			if (!value) {
-				this.handle.style.fontSize = this.style.fontSize
+				this.handle.style = this.style
 			}
 			this.setDirty(true)
 		}
@@ -118,10 +118,33 @@ export class TextElement extends BaseElement {
 		}
 	}
 
+	private updateFontSize(value: number) {
+		this.handle.style.fontSize = value
+		const scale = value / (this.style.fontSize as number)
+		if (this.style.lineHeight) {
+			this.handle.style.lineHeight = this.style.lineHeight * scale
+		}
+		if (this.style.leading) {
+			this.handle.style.leading = this.style.leading * scale
+		}
+		if (this.style.letterSpacing) {
+			this.handle.style.letterSpacing = this.style.letterSpacing * scale
+		}
+		if (this.style.strokeThickness) {
+			this.handle.style.strokeThickness = this.style.strokeThickness * scale
+		}
+		if (this.style.dropShadowDistance) {
+			this.handle.style.dropShadowDistance = this.style.dropShadowDistance * scale
+		}
+		if (this.style.dropShadowBlur) {
+			this.handle.style.dropShadowBlur = this.style.dropShadowBlur * scale
+		}
+	}
+
 	private fitText(width: number, height: number) {
 		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
 		if (scale < 1) {
-			this.handle.style.fontSize = Math.max(1, Math.floor(this.handle.style.fontSize as number * scale))
+			this.updateFontSize(Math.max(1, Math.floor(this.handle.style.fontSize as number * scale)))
 			this.meausreText()
 		}
 	}
@@ -139,7 +162,7 @@ export class TextElement extends BaseElement {
 				return
 			}
 			lastSize = currentSize
-			this.handle.style.fontSize = currentSize
+			this.updateFontSize(currentSize)
 			this.meausreText()
 			const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
 			if (scale > 1) {
@@ -158,7 +181,7 @@ export class TextElement extends BaseElement {
 		const width = this.width
 		const height = this.height
 		if (this._fit && !this.textRect) {
-			this.handle.style.fontSize = this.style.fontSize
+			this.updateFontSize(this.style.fontSize as number)
 			this.meausreText()
 			if (this.style.wordWrap) {
 				this.fitWrappedText(width, height)
