@@ -4,7 +4,8 @@
 	],
 	"compilerOptions": {
 		"target": "es6",
-		"module": "commonjs",
+		"module": "es6",
+		"moduleResolution": "node",
 		"outDir": "./lib",
 		"declaration": true,
 		"inlineSourceMap": false,

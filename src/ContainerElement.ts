@@ -1,4 +1,5 @@
-import { BaseElement, BaseConfig, layoutFactory } from "./BaseElement"
+import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import LayoutFactory from "./LayoutFactory.js"
 import { Container } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
 
@@ -7,14 +8,27 @@ export interface ContainerElementConfig extends BaseConfig {
 }
 
 export class ContainerElement extends BaseElement {
-	public readonly handle!: Container
+	declare public readonly handle: Container
 	private _scale: number
 
-	constructor(name?: string, config?: ContainerElementConfig, handle?: Container) {
-		super(handle || new Container(), "container", name, config)
+	public static register(layoutFactory: LayoutFactory) {
+		layoutFactory.register("container", (factory, name, config) => new this({
+			factory,
+			name,
+			config,
+			type: "container",
+			handle: new Container()
+		}))
+	}
+
+	protected constructor(props: BaseConstructorProperties<ContainerElementConfig>) {
+		super(props)
 		this._scale = 1
-		if (config?.scale) {
-			this.scale = config.scale
+		const config = props.config
+		if (config) {
+			if (config.scale) {
+				this.scale = config.scale
+			}
 		}
 	}
 
@@ -50,6 +64,7 @@ export class ContainerElement extends BaseElement {
 	public set scale(value: number) {
 		this._scale = value
 		this.handle.scale.set(value)
+		this.onScaleChange(this._parentScale)
 		this.setDirty()
 	}
 
@@ -58,7 +73,7 @@ export class ContainerElement extends BaseElement {
 	}
 }
 
-layoutFactory.register("container", (name, config) => new ContainerElement(name, config))
+export default ContainerElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {

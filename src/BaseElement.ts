@@ -1,12 +1,9 @@
-import { LayoutElement, LayoutFactory, LayoutElementJson as BaseLayoutElementJson, Typify } from "@md5crypt/layout"
-import { ElementTypes } from "./ElementTypes"
+import { LayoutElement } from "@md5crypt/layout"
 import { Container } from "@pixi/display"
 import { Graphics } from "@pixi/graphics"
-import { Texture } from "@pixi/core"
-import type { } from "@pixi/interaction"
+import type {} from "@pixi/interaction"
 
-export type LayoutElementJson = BaseLayoutElementJson<Typify<ElementTypes>>
-export const layoutFactory = new LayoutFactory<BaseElement, LayoutElementJson>()
+import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
 
 export interface BaseConfig {
 	mask?: boolean
@@ -16,42 +13,62 @@ export interface BaseConfig {
 	rotation?: number
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
-	scale?: number
-	anchor?: [number, number]
+	anchor?: [number, number] | number
 }
 
-export abstract class BaseElement extends LayoutElement<BaseElement> {
+export interface BaseConstructorProperties<T extends BaseConfig = BaseConfig> {
+	factory: LayoutFactory
+	handle: Container
+	type: string
+	config?: T
+	name?: string
+}
+
+export abstract class BaseElement extends LayoutElement<BaseElement, LayoutElementJson> {
+	declare readonly factory: LayoutFactory
+
 	public readonly handle: Container
 	private hidden: boolean
 	private _mask?: boolean
 	protected _anchor: [number, number]
+	protected _parentScale: number
 
-	public static assetResolver?: (key: string) => Texture
-
-	protected static resolveAsset(asset: string | Texture | undefined | null) {
-		if (typeof asset == "string") {
-			if (BaseElement.assetResolver) {
-				return BaseElement.assetResolver(asset)
-			}
-			throw new Error("string has been passed as image and BaseElement.assetResolver has not been defined")
-		}
-		return asset || Texture.WHITE
-	}
-
-	protected constructor(handle: Container, type: string, name?: string, config?: BaseConfig) {
-		super(type, name)
-		this.handle = handle
+	protected constructor(props: BaseConstructorProperties) {
+		super(props.factory, props.type, props.name)
+		this.handle = props.handle
 		this.hidden = false
 		this._anchor = [0, 0]
+		this._parentScale = 1
+		const config = props.config
 		if (config) {
 			this._mask = config.mask
-			this.handle.zIndex = config.zIndex || 0
-			config.sorted && (this.handle.sortableChildren = true)
-			config.interactive && (this.interactive = true)
-			config.alpha !== undefined && (this.alpha = config.alpha)
-			config.rotation && (this.rotation = config.rotation)
-			config.flipped && (this.flipped = config.flipped)
-			config.anchor && (this._anchor[0] = config.anchor[0], this._anchor[1] = config.anchor[1])
+			if (config.zIndex) {
+				this.handle.zIndex = config.zIndex
+			}
+			if (config.sorted) {
+				this.handle.sortableChildren = true
+			}
+			if (config.interactive) {
+				this.interactive = true
+			}
+			if (config.alpha !== undefined) {
+				this.alpha = config.alpha
+			}
+			if (config.rotation) {
+				this.rotation = config.rotation
+			}
+			if (config.flipped) {
+				this.flipped = config.flipped
+			}
+			if (config.anchor) {
+				if (Array.isArray(config.anchor)) {
+					this._anchor[0] = config.anchor[0]
+					this._anchor[1] = config.anchor[1]
+				} else {
+					this._anchor[0] = config.anchor
+					this._anchor[1] = config.anchor
+				}
+			}
 		}
 	}
 
@@ -63,6 +80,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return this._anchor[0] ? super.innerLeft - this._anchor[0] * this.scale * this.width : super.innerLeft
 	}
 
+	public get sorted() {
+		return this.handle.sortableChildren
+	}
+
+	public set sorted(value: boolean) {
+		this.handle.sortableChildren = value
+	}
+
 	public get zIndex() {
 		return this.handle.zIndex
 	}
@@ -71,14 +96,30 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		this.handle.zIndex = value
 	}
 
+	public get alpha() {
+		return this.handle.visible ? this.handle.alpha : 0
+	}
+
 	public set alpha(value: number) {
 		this.hidden = value === 0
 		this.handle.visible = value !== 0
 		this.handle.alpha = value
 	}
 
+	public get rotation() {
+		return this.handle.angle
+	}
+
 	public set rotation(value: number) {
 		this.handle.angle = value
+	}
+
+	public get flipped() {
+		if (this.handle.scale.x >= 0 && this.handle.scale.y >= 0) {
+			return false
+		} else {
+			return (this.handle.scale.x >= 0) ? "vertical" : "horizontal"
+		}
 	}
 
 	public set flipped(value: false | "vertical" | "horizontal") {
@@ -122,18 +163,8 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return 1
 	}
 
-	public on(event: string, callback: Function) {
-		this.handle.on(event, callback as any)
-	}
-
 	public get globalScale() {
-		let scale = this.scale
-		let parent = this._parent
-		while (parent) {
-			scale *= parent.scale
-			parent = parent._parent
-		}
-		return scale
+		return this.scale * this._parentScale
 	}
 
 	public get globalBoundingBox() {
@@ -159,6 +190,10 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		return result
 	}
 
+	public get mask() {
+		return this.handle.mask != null
+	}
+
 	public set mask(value: boolean) {
 		if (this.mask != value) {
 			if (this.mask) {
@@ -173,14 +208,24 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		}
 	}
 
+	public get anchor() {
+		return this._anchor as Readonly<[number, number]>
+	}
+
+	public set anchor(value: Readonly<[number, number]>) {
+		this._anchor[0] = value[0]
+		this._anchor[1] = value[1]
+		this.setDirty()
+	}
+
 	public setAnchor(x: number, y?: number) {
 		this._anchor[0] = x
 		this._anchor[1] = y === undefined ? x : y
 		this.setDirty()
 	}
 
-	public get anchor() {
-		return this._anchor as Readonly<[number, number]>
+	public on(event: string, callback: Function) {
+		this.handle.on(event, callback as any)
 	}
 
 	protected onRemoveElement(index: number) {
@@ -193,6 +238,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		} else {
 			const position = this.handle.getChildIndex(this.children[index].handle)
 			this.handle.addChildAt(element.handle, position)
+		}
+		element.onScaleChange(this._parentScale)
+	}
+
+	protected onScaleChange(scale: number) {
+		this._parentScale = scale
+		for (let i = 0; i < this.children.length; i += 1) {
+			this.children[i].onScaleChange(this._parentScale * this.scale)
 		}
 	}
 
@@ -224,3 +277,5 @@ export abstract class BaseElement extends LayoutElement<BaseElement> {
 		}
 	}
 }
+
+export default BaseElement

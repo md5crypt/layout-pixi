@@ -1,13 +1,13 @@
 import { LayoutConfig } from "@md5crypt/layout"
-import { ElementTypes } from "./ElementTypes"
-import { BaseConfig } from "./BaseElement"
+import { ElementTypes } from "./ElementTypes.js"
+import { BaseConfig } from "./BaseElement.js"
 
 type LayoutElementProps = {
 	[K in keyof ElementTypes]:
 	LayoutConfig<ElementTypes[K]["element"]> &
 	ElementTypes[K]["config"] &
 	{name?: string, metadata?: Record<string, any>} &
-	{children?: React.ReactNode}
+	{children?: ReactNode}
 }
 
 declare global {
@@ -18,6 +18,7 @@ declare global {
 		}
 		interface Element {
 			type: keyof ElementTypes
+			name?: string
 			layout?: LayoutConfig<any>
 			config?: BaseConfig
 			metadata?: Record<string, any>
@@ -45,75 +46,82 @@ const baseConfigKeys = [
 const baseConfigKeySet: Exclude<keyof LayoutConfig<any>, typeof baseConfigKeys[number]> extends never ?
 	Set<string> : "baseConfigKeys is missing keys" = new Set(baseConfigKeys)
 
-export namespace React {
-	export interface ReactNodeArray extends Array<ReactNode> {}
-	export type ReactNode = JSX.Element | ReactNodeArray | false | null | undefined
+export interface ReactNodeArray extends Array<ReactNode> {}
+export type ReactNode = JSX.Element | ReactNodeArray | false | null | undefined
 
-	export type ComponentFunction = ((props: any) => JSX.Element)
-	export type IntrinsicElementNames = keyof LayoutElementProps
+export type Slots<T extends string = string> = Record<T, ReactNode>
 
-	export type ComponentProps<T extends IntrinsicElementNames | ComponentFunction> =
-		T extends keyof LayoutElementProps ?
-			LayoutElementProps[T] :
-			T extends (arg0: infer K) => any ? Omit<K, "children"> : never
+export type ComponentFunction = ((props: any, slots: Slots) => JSX.Element)
+export type IntrinsicElementNames = keyof LayoutElementProps
 
-	export function Fragment(props: {children?: ReactNode}) {
-		return {type: "jsx-fragment" as any, children: props.children || []} as JSX.Element
-	}
+export type ComponentProps<T extends IntrinsicElementNames | ComponentFunction> =
+	T extends keyof LayoutElementProps ?
+		LayoutElementProps[T] :
+		T extends (arg0: infer K) => any ? Omit<K, "children"> : never
 
-	export function isFragment(data: JSX.Element) {
-		return (data.type as string) == "jsx-fragment"
-	}
+export function Fragment(props: {children?: ReactNode}) {
+	return {type: "jsx-fragment" as any, children: props.children || []} as JSX.Element
+}
 
-	export function toArray(data: JSX.Element) {
-		return data.type as string == "jsx-fragment" ? data.children! : [data]
-	}
+export function Slot(props: {name: string, children?: ReactNode}) {
+	return {type: "jsx-slot" as any, name: props.name, children: props.children || []} as JSX.Element
+}
 
-	export function createElement<T extends IntrinsicElementNames | ComponentFunction>(type: T, props: ComponentProps<T>, ...rawChildren: ReactNode[]) {
-		const children = []
-		for (let i = 0; i < rawChildren.length; i += 1) {
-			const value = rawChildren[i]
-			if (value) {
-				if (Array.isArray(value)) {
-					for (let j = 0; j < value.length; j += 1) {
-						const item = value[j]
-						if (item) {
-							children.push(item)
-						}
+export function isFragment(data: JSX.Element) {
+	return (data.type as string) == "jsx-fragment"
+}
+
+export function toArray(data: JSX.Element) {
+	return data.type as string == "jsx-fragment" ? data.children! : [data]
+}
+
+export function createElement<T extends IntrinsicElementNames | ComponentFunction>(type: T, props: ComponentProps<T>, ...rawChildren: ReactNode[]) {
+	const children = [] as JSX.Element[]
+	const slots = {} as Slots
+	for (let i = 0; i < rawChildren.length; i += 1) {
+		const value = rawChildren[i]
+		if (value) {
+			if (Array.isArray(value)) {
+				for (let j = 0; j < value.length; j += 1) {
+					const item = value[j]
+					if (item) {
+						children.push(item as JSX.Element)
 					}
-				} else if ((value.type as string) == "jsx-fragment") {
-					children.push(...value.children!)
+				}
+			} else if ((value.type as string) == "jsx-fragment") {
+				children.push(...value.children!)
+			} else if ((value.type as string) == "jsx-slot") {
+				slots[value.name!] = value.children
+			} else {
+				children.push(value)
+			}
+		}
+	}
+	if (typeof type == "string") {
+		const result = {
+			type,
+			children,
+			layout: {},
+			config: {}
+		} as Record<string, any>
+		if (props) {
+			for (const key in props) {
+				if (key == "name") {
+					result.name = props[key]
+				} else if (key == "metadata") {
+					result.metadata = props[key]
+				} else if (baseConfigKeySet.has(key)) {
+					result.layout[key] = props[key]
 				} else {
-					children.push(value)
+					result.config[key] = props[key]
 				}
-			}
-		}
-		if (typeof type == "string") {
-			const result = {
-				type,
-				children,
-				layout: {},
-				config: {}
-			} as Record<string, any>
-			if (props) {
-				for (const key in props) {
-					if (key == "name") {
-						result.name = props[key]
-					} else if (key == "metadata") {
-						result.metadata = props[key]
-					} else if (baseConfigKeySet.has(key)) {
-						result.layout[key] = props[key]
-					} else {
-						result.config[key] = props[key]
-					}
 
-				}
 			}
-			return result as JSX.Element
-		} else {
-			return type({children, ...props})
 		}
+		return result as JSX.Element
+	} else {
+		return type({children, ...props}, slots)
 	}
 }
 
-export default React
+export * as default from "./JSXSupport.js"

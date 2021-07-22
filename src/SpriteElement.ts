@@ -1,4 +1,5 @@
-import { BaseElement, BaseConfig, layoutFactory } from "./BaseElement"
+import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { LayoutFactory } from "./LayoutFactory.js"
 
 import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
@@ -16,11 +17,48 @@ export interface SpriteElementConfig extends BaseConfig {
 }
 
 export class SpriteElement extends BaseElement {
-	public readonly handle!: Sprite
+	declare public readonly handle: Sprite
 	private _scaling: ScalingType
 	private texture: Texture
 	private _verticalAlign: "top" | "middle" | "bottom"
 	private _horizontalAlign: "left" | "center" | "right"
+
+	public static register(layoutFactory: LayoutFactory) {
+		layoutFactory.register("sprite", (factory, name, config) => new this({
+			factory,
+			name,
+			config,
+			type: "sprite",
+			handle: new Sprite(factory.resolveAsset(config?.image))
+		}))
+	}
+
+	protected constructor(props: BaseConstructorProperties<SpriteElementConfig>) {
+		super(props)
+		this.handle.anchor.set(0.5, 0.5)
+		this.texture = this.handle.texture
+		this._scaling = "none"
+		this._horizontalAlign = "left"
+		this._verticalAlign = "top"
+		const config = props.config
+		if (config) {
+			if (config.tint !== undefined) {
+				this.handle.tint = config.tint
+			}
+			if (config.scaling) {
+				this._scaling = config.scaling
+			}
+			if (config.horizontalAlign) {
+				this._horizontalAlign = config.horizontalAlign
+			}
+			if (config.verticalAlign) {
+				this._verticalAlign = config.verticalAlign
+			}
+			if (config.crop) {
+				this.crop(config.crop)
+			}
+		}
+	}
 
 	public crop(rect: number[]) {
 		const texture = this.texture
@@ -59,36 +97,29 @@ export class SpriteElement extends BaseElement {
 		}
 	}
 
-	constructor(name?: string, config?: SpriteElementConfig, handle?: Sprite) {
-		const texture = BaseElement.resolveAsset(config?.image)
-		super(handle || new Sprite(texture), "sprite", name, config)
-		this.handle.anchor.set(0.5, 0.5)
-		this.texture = texture
-		this._scaling = "none"
-		this._horizontalAlign = "left"
-		this._verticalAlign = "top"
-		if (config) {
-			(config.tint !== undefined) && (this.handle.tint = config.tint)
-			config.scaling && (this._scaling = config.scaling)
-			config.horizontalAlign && (this._horizontalAlign = config.horizontalAlign)
-			config.verticalAlign && (this._verticalAlign = config.verticalAlign)
-			if (config.crop) {
-				this.crop(config.crop)
-			}
-		}
+	public get image() {
+		return this.texture
 	}
 
-	public set image(value: Texture | null | string) {
-		const texture = BaseElement.resolveAsset(value)
+	public set image(value: Texture | string | null) {
+		const texture = this.factory.resolveAsset(value)
 		if (this.texture != texture) {
 			this.texture = texture
-			this.handle.texture = this.texture
+			this.handle.texture = texture
 			this.setDirty()
 		}
 	}
 
+	public get tint() {
+		return this.handle.tint
+	}
+
 	public set tint(value: number) {
 		this.handle.tint = value
+	}
+
+	public get scaling() {
+		return this._scaling
 	}
 
 	public set scaling(value: ScalingType) {
@@ -97,10 +128,18 @@ export class SpriteElement extends BaseElement {
 		this.setDirty()
 	}
 
+	public get verticalAlign() {
+		return this._verticalAlign
+	}
+
 	public set verticalAlign(value: "top" | "middle" | "bottom") {
 		this._verticalAlign = value
 		this.handle.texture = this.texture
 		this.setDirty()
+	}
+
+	public get horizontalAlign() {
+		return this._horizontalAlign
 	}
 
 	public set horizontalAlign(value: "left" | "center" | "right") {
@@ -194,7 +233,7 @@ export class SpriteElement extends BaseElement {
 	}
 }
 
-layoutFactory.register("sprite", (name, config) => new SpriteElement(name, config))
+export default SpriteElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {

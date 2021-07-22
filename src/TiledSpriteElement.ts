@@ -1,4 +1,5 @@
-import { BaseElement, BaseConfig, layoutFactory } from "./BaseElement"
+import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import LayoutFactory from "./LayoutFactory.js"
 
 import { Texture } from "@pixi/core"
 import { TilingSprite } from "@pixi/sprite-tiling"
@@ -9,22 +10,43 @@ export interface TiledSpriteElementConfig extends BaseConfig {
 }
 
 export class TiledSpriteElement extends BaseElement {
-	public readonly handle!: TilingSprite
+	declare public readonly handle: TilingSprite
 
-	constructor(name?: string, config?: TiledSpriteElementConfig) {
-		super(new TilingSprite(BaseElement.resolveAsset(config?.image)), "sprite-tiled", name, config)
+	public static register(layoutFactory: LayoutFactory) {
+		layoutFactory.register("sprite-tiled", (factory, name, config) => new this({
+			factory,
+			name,
+			config,
+			type: "sprite-tiled",
+			handle: new TilingSprite(factory.resolveAsset(config?.image))
+		}))
+	}
+
+	protected constructor(props: BaseConstructorProperties<TiledSpriteElementConfig>) {
+		super(props)
 		this.handle.anchor.set(0.5, 0.5)
+		const config = props.config
 		if (config) {
-			(config.tint !== undefined) && (this.handle.tint = config.tint)
+			if (config.tint !== undefined) {
+				this.handle.tint = config.tint
+			}
 		}
 	}
 
-	public set image(value: Texture | null | string) {
-		const texture = BaseElement.resolveAsset(value)
+	public get image(): Texture {
+		return this.handle.texture
+	}
+
+	public set image(value: Texture | string | null) {
+		const texture = this.factory.resolveAsset(value)
 		if (this.handle.texture != texture) {
 			this.handle.texture = texture
 			this.setDirty()
 		}
+	}
+
+	public get tint() {
+		return this.handle.tint
 	}
 
 	public set tint(value: number) {
@@ -47,7 +69,7 @@ export class TiledSpriteElement extends BaseElement {
 	}
 }
 
-layoutFactory.register("sprite-tiled", (name, config) => new TiledSpriteElement(name, config))
+export default TiledSpriteElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
