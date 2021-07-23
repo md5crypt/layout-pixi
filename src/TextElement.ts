@@ -78,7 +78,6 @@ export class TextElement extends BaseElement {
 
 	protected onScaleChange(scale: number) {
 		super.onScaleChange(scale)
-		console.log(this._resolution, this.globalScale)
 		this.handle.resolution = this._resolution * this.globalScale
 		this.setDirty(true)
 	}
@@ -136,6 +135,14 @@ export class TextElement extends BaseElement {
 		}
 	}
 
+	public get roundPixels() {
+		return this.handle.roundPixels
+	}
+
+	public set roundPixels(value: boolean) {
+		this.handle.roundPixels = value
+	}
+
 	public get verticalAlign() {
 		return this._verticalAlign
 	}
@@ -157,6 +164,11 @@ export class TextElement extends BaseElement {
 	}
 
 	public setStyle(style: Partial<ITextStyle>) {
+		this.style = {...style}
+		this.setDirty(true)
+	}
+
+	public updateStyle(style: Partial<ITextStyle>) {
 		Object.assign(this.style, style)
 		this.setDirty(true)
 	}
@@ -164,7 +176,7 @@ export class TextElement extends BaseElement {
 	public setText(text: string, style?: Partial<ITextStyle>) {
 		this._text = text
 		if (style) {
-			Object.assign(this.style, style)
+			this.style = {...style}
 		}
 		this.setDirty(true)
 	}

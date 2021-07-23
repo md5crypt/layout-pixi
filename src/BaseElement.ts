@@ -13,6 +13,7 @@ export interface BaseConfig {
 	rotation?: number
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
+	noPropagation?: boolean
 	anchor?: [number, number] | number
 }
 
@@ -50,6 +51,9 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 			}
 			if (config.interactive) {
 				this.interactive = true
+			}
+			if (config.noPropagation) {
+				this.noPropagation = true
 			}
 			if (config.alpha !== undefined) {
 				this.alpha = config.alpha
@@ -143,12 +147,12 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		this.handle.interactive = value
 	}
 
-	public get interactiveChildren() {
-		return this.handle.interactiveChildren || false
+	public get noPropagation() {
+		return !this.handle.interactiveChildren
 	}
 
-	public set interactiveChildren(value: boolean) {
-		this.handle.interactiveChildren = value
+	public set noPropagation(value: boolean) {
+		this.handle.interactiveChildren = !value
 	}
 
 	public get contentHeight() {

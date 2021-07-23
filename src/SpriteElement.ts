@@ -5,7 +5,7 @@ import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
 import { Sprite } from "@pixi/sprite"
 
-type ScalingType = "none" | "contain" | "stretch" | "cover"
+type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover"
 
 export interface SpriteElementConfig extends BaseConfig {
 	image?: Texture | string
@@ -13,7 +13,6 @@ export interface SpriteElementConfig extends BaseConfig {
 	verticalAlign?: "top" | "middle" | "bottom"
 	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
-	crop?: number[]
 }
 
 export class SpriteElement extends BaseElement {
@@ -54,46 +53,6 @@ export class SpriteElement extends BaseElement {
 			if (config.verticalAlign) {
 				this._verticalAlign = config.verticalAlign
 			}
-			if (config.crop) {
-				this.crop(config.crop)
-			}
-		}
-	}
-
-	public crop(rect: number[]) {
-		const texture = this.texture
-		if (texture.noFrame) {
-			this.handle.texture = new Texture(
-				texture.baseTexture,
-				new Rectangle(
-					rect[0],
-					rect[1],
-					texture.orig.width - rect[0] - rect[2],
-					texture.orig.height - rect[1] - rect[3]
-				)
-			)
-		} else {
-			this.handle.texture = new Texture(
-				texture.baseTexture,
-				new Rectangle(
-					texture.frame.x + rect[0],
-					texture.frame.y + rect[1],
-					texture.frame.width - rect[0] - rect[2],
-					texture.frame.height - rect[1] - rect[3]
-				),
-				new Rectangle(
-					0,
-					0,
-					texture.orig.width - rect[0] - rect[2],
-					texture.orig.height - rect[1] - rect[3]
-				),
-				new Rectangle(
-					texture.trim.x + rect[0],
-					texture.trim.y + rect[1],
-					texture.trim.width - rect[0] - rect[2],
-					texture.trim.height - rect[1] - rect[3]
-				)
-			)
 		}
 	}
 
@@ -124,7 +83,6 @@ export class SpriteElement extends BaseElement {
 
 	public set scaling(value: ScalingType) {
 		this._scaling = value
-		this.handle.texture = this.texture
 		this.setDirty()
 	}
 
@@ -134,7 +92,6 @@ export class SpriteElement extends BaseElement {
 
 	public set verticalAlign(value: "top" | "middle" | "bottom") {
 		this._verticalAlign = value
-		this.handle.texture = this.texture
 		this.setDirty()
 	}
 
@@ -144,14 +101,54 @@ export class SpriteElement extends BaseElement {
 
 	public set horizontalAlign(value: "left" | "center" | "right") {
 		this._horizontalAlign = value
-		this.handle.texture = this.texture
 		this.setDirty()
+	}
+
+	protected crop(rect: number[]) {
+		const texture = this.texture
+		if (texture.noFrame) {
+			this.handle.texture = new Texture(
+				texture.baseTexture,
+				new Rectangle(
+					rect[0],
+					rect[1],
+					texture.orig.width - rect[0] - rect[2],
+					texture.orig.height - rect[1] - rect[3]
+				)
+			)
+		} else {
+			this.handle.texture = new Texture(
+				texture.baseTexture,
+				new Rectangle(
+					texture.frame.x + rect[0],
+					texture.frame.y + rect[1],
+					texture.frame.width - rect[0] - rect[2],
+					texture.frame.height - rect[1] - rect[3]
+				),
+				new Rectangle(
+					0,
+					0,
+					texture.orig.width - rect[0] - rect[2],
+					texture.orig.height - rect[1] - rect[3]
+				),
+				new Rectangle(
+					texture.trim.x,
+					texture.trim.y,
+					texture.trim.width - rect[0] - rect[2],
+					texture.trim.height - rect[1] - rect[3]
+				)
+			)
+		}
 	}
 
 	protected onUpdate() {
 		super.onUpdate()
 		let left = this.computedLeft
 		let top = this.computedTop
+		if (this.handle.texture != this.texture) {
+			this.handle.texture = this.texture
+		}
+		this.handle.scale.set(1)
 		switch (this._scaling) {
 			case "stretch":
 				this.handle.width = this.innerWidth
@@ -207,8 +204,55 @@ export class SpriteElement extends BaseElement {
 					}
 				}
 				break
-			} default:
-				this.handle.scale.set(1)
+			}
+			case "clipped": {
+				const elementWidth = this.innerWidth
+				const textureWidth = this.texture.width
+				let crop = false
+				let xCrop = [0, 0]
+				if (elementWidth < textureWidth) {
+					crop = true
+					if (this._horizontalAlign == "left") {
+						xCrop[1] = textureWidth - elementWidth
+					} else if (this._horizontalAlign == "center") {
+						xCrop[0] = (textureWidth - elementWidth) / 2
+						xCrop[1] = xCrop[0]
+					} else {
+						xCrop[0] = textureWidth - elementWidth
+					}
+				} else {
+					if (this._horizontalAlign == "left") {
+						left -= (elementWidth - textureWidth) / 2
+					} else if (this._horizontalAlign == "right") {
+						left += (elementWidth - textureWidth) / 2
+					}
+				}
+				const elementHeight = this.innerHeight
+				const textureHeight = this.texture.height
+				let yCrop = [0, 0]
+				if (elementHeight < textureHeight) {
+					crop = true
+					if (this._verticalAlign == "top") {
+						yCrop[1] = textureHeight - elementHeight
+					} else if (this._verticalAlign == "middle") {
+						yCrop[0] = (textureHeight - elementHeight) / 2
+						yCrop[1] = yCrop[0]
+					} else {
+						yCrop[0] = textureHeight - elementHeight
+					}
+				} else {
+					if (this._verticalAlign == "top") {
+						top -= (elementHeight - textureHeight) / 2
+					} else if (this._verticalAlign == "bottom") {
+						top += (elementHeight - textureHeight) / 2
+					}
+				}
+				if (crop) {
+					this.crop([xCrop[0], yCrop[0], xCrop[1], yCrop[1]])
+				}
+				break
+			}
+			default:
 				if (this._verticalAlign == "top") {
 					top -= (this.innerHeight - this.texture.height) / 2
 				} else if (this._verticalAlign == "bottom") {

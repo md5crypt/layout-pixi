@@ -46,7 +46,7 @@ const baseConfigKeys = [
 const baseConfigKeySet: Exclude<keyof LayoutConfig<any>, typeof baseConfigKeys[number]> extends never ?
 	Set<string> : "baseConfigKeys is missing keys" = new Set(baseConfigKeys)
 
-export interface ReactNodeArray extends Array<ReactNode> {}
+interface ReactNodeArray extends Array<ReactNode> {}
 export type ReactNode = JSX.Element | ReactNodeArray | false | null | undefined
 
 export type Slots<T extends string = string> = Record<T, ReactNode>

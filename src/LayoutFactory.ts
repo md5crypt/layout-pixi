@@ -59,12 +59,12 @@ export class LayoutFactory extends BaseLayoutFactory<BaseElement, LayoutElementJ
 		return element
 	}
 
-	public assetResolver?: (key: string) => Texture
+	public onResolveAsset?: (key: string) => Texture
 
 	public resolveAsset(asset: string | Texture | undefined | null) {
 		if (typeof asset == "string") {
-			if (this.assetResolver) {
-				return this.assetResolver(asset)
+			if (this.onResolveAsset) {
+				return this.onResolveAsset(asset)
 			}
 			throw new Error("string has been passed but assetResolver has not been defined")
 		}

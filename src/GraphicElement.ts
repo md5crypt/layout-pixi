@@ -4,7 +4,7 @@ import { Graphics } from "@pixi/graphics"
 import { Rectangle } from "@pixi/math"
 
 export interface GraphicElementConfig extends BaseConfig {
-	draw?: (self: GraphicElement) => void
+	onDraw?: (self: GraphicElement) => void
 }
 
 export class GraphicElement extends BaseElement {
@@ -26,7 +26,7 @@ export class GraphicElement extends BaseElement {
 		super(props)
 		const config = props.config
 		if (config) {
-			this._onDraw = config.draw
+			this._onDraw = config.onDraw
 		}
 	}
 
