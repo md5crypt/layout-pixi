@@ -4,7 +4,7 @@ import LayoutFactory from "./LayoutFactory.js"
 import { Texture } from "@pixi/core"
 import { TilingSprite } from "@pixi/sprite-tiling"
 
-export interface TiledSpriteElementConfig extends BaseConfig {
+export interface TiledSpriteElementConfig<T extends TiledSpriteElement = TiledSpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
 	tint?: number
 }
@@ -13,18 +13,11 @@ export class TiledSpriteElement extends BaseElement {
 	declare public readonly handle: TilingSprite
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite-tiled", (factory, name, config) => new this({
-			factory,
-			name,
-			config,
-			type: "sprite-tiled",
-			handle: new TilingSprite(factory.resolveAsset(config?.image))
-		}))
+		layoutFactory.register("sprite-tiled", props => new this(props, new TilingSprite(props.factory.resolveAsset(props.config?.image))))
 	}
 
-	protected constructor(props: BaseConstructorProperties<TiledSpriteElementConfig>) {
-		super(props)
-		this.handle.anchor.set(0.5, 0.5)
+	protected constructor(props: BaseConstructorProperties<TiledSpriteElementConfig<any>>, handle: TilingSprite) {
+		super(props, handle)
 		const config = props.config
 		if (config) {
 			if (config.tint !== undefined) {
@@ -56,8 +49,10 @@ export class TiledSpriteElement extends BaseElement {
 	protected onUpdate() {
 		super.onUpdate()
 		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.anchor.set(this.pivot[0], this.pivot[1])
 		this.handle.width = this.innerWidth
 		this.handle.height = this.innerHeight
+		this.handle.scale.set(this._scale)
 	}
 
 	public get contentHeight() {

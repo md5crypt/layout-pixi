@@ -1,6 +1,6 @@
 
-import type { LayoutConfig } from "@md5crypt/layout"
-import type { BaseElement } from "./BaseElement.js"
+import type { LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
+import type { BaseElement, BaseConstructorProperties } from "./BaseElement.js"
 
 import {
 	LayoutFactory as BaseLayoutFactory,
@@ -15,19 +15,14 @@ type Typify<T> = {[K in keyof T]: T[K]}
 
 export type LayoutElementJson = BaseLayoutElementJson<Typify<ElementTypes>>
 
-interface ElementDefaults<T extends keyof ElementTypes> {
-	layout?: LayoutConfig<ElementTypes[T]["element"]>
-	config?: ElementTypes[T]["config"]
-}
-
 export class LayoutFactory extends BaseLayoutFactory<BaseElement, LayoutElementJson> {
-	private defaults?: ElementDefaults<any>
-	private defaultsMap: Map<string, ElementDefaults<any>> = new Map()
+	private defaults?: LayoutElementConfig<any>
+	private defaultsMap: Map<string, LayoutElementConfig<any>> = new Map()
 
-	public setDefaults(defaults: ElementDefaults<any>): void
-	public setDefaults<T extends keyof ElementTypes>(type: T, defaults: ElementDefaults<T>): void
-	public setDefaults(arg0: string | ElementDefaults<any>, arg1?: ElementDefaults<any>) {
-		let defaults: ElementDefaults<any>
+	public setDefaults(defaults: LayoutElementConfig<BaseElement>): void
+	public setDefaults<T extends keyof ElementTypes>(type: T, defaults: ElementTypes[T]["config"]): void
+	public setDefaults(arg0: string | LayoutElementConfig<any>, arg1?: LayoutElementConfig<any>) {
+		let defaults: LayoutElementConfig<any>
 		if (typeof arg0 == "string") {
 			let object = this.defaultsMap.get(arg0)
 			if (!object) {
@@ -44,18 +39,12 @@ export class LayoutFactory extends BaseLayoutFactory<BaseElement, LayoutElementJ
 		Object.assign(defaults, arg1)
 	}
 
-	public createElement<T extends keyof ElementTypes>(type: T, name?: string, config?: ElementTypes[T]["config"]): ElementTypes[T]["element"] {
+	public createElement<T extends keyof ElementTypes>(type: T, config?: ElementTypes[T]["config"]): ElementTypes[T]["element"] {
 		const typeDefaults = this.defaultsMap.get(type)
 		if (this.defaults || typeDefaults) {
-			config = {...this.defaults?.config, ...typeDefaults?.config, ...config}
+			config = {...this.defaults, ...typeDefaults, ...config} as LayoutElementConfig
 		}
-		const element = super.createElement(type, name, config)
-		if (this.defaults?.layout) {
-			element.updateConfig(this.defaults.layout)
-		}
-		if (this.defaults?.layout) {
-			element.updateConfig(this.defaults.layout)
-		}
+		const element = super.createElement(type, config as any)
 		return element
 	}
 
@@ -68,7 +57,11 @@ export class LayoutFactory extends BaseLayoutFactory<BaseElement, LayoutElementJ
 			}
 			throw new Error("string has been passed but assetResolver has not been defined")
 		}
-		return asset || Texture.WHITE
+		return asset || Texture.EMPTY
+	}
+
+	public register<T extends keyof ElementTypes>(type: T, constructor: (props: BaseConstructorProperties<ElementTypes[T]["config"]>) => BaseElement) {
+		super.register(type, constructor as any)
 	}
 }
 

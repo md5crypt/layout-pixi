@@ -3,7 +3,7 @@ import LayoutFactory from "./LayoutFactory.js"
 import { Graphics } from "@pixi/graphics"
 import { Rectangle } from "@pixi/math"
 
-export interface GraphicElementConfig extends BaseConfig {
+export interface GraphicElementConfig<T extends BaseElement = GraphicElement> extends BaseConfig<T> {
 	onDraw?: (self: GraphicElement) => void
 }
 
@@ -13,17 +13,11 @@ export class GraphicElement extends BaseElement {
 	private _onDraw?: (self: GraphicElement) => void
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("graphic", (factory, name, config) => new this({
-			factory,
-			name,
-			config,
-			type: "graphic",
-			handle: new Graphics()
-		}))
+		layoutFactory.register("graphic", props => new this(props, new Graphics()))
 	}
 
-	protected constructor(props: BaseConstructorProperties<GraphicElementConfig>) {
-		super(props)
+	protected constructor(props: BaseConstructorProperties<GraphicElementConfig<any>>, handle: Graphics) {
+		super(props, handle)
 		const config = props.config
 		if (config) {
 			this._onDraw = config.onDraw
@@ -45,7 +39,8 @@ export class GraphicElement extends BaseElement {
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.width / 2, this.height / 2)
+		this.handle.pivot.set(this.width * this.pivot[0], this.height * this.pivot[1])
+		this.handle.scale.set(this._scale)
 		this.handle.clear()
 		if (this._onDraw) {
 			this._onDraw(this)

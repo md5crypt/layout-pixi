@@ -7,7 +7,7 @@ import { Sprite } from "@pixi/sprite"
 
 type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover"
 
-export interface SpriteElementConfig extends BaseConfig {
+export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
 	scaling?: ScalingType
 	verticalAlign?: "top" | "middle" | "bottom"
@@ -23,18 +23,11 @@ export class SpriteElement extends BaseElement {
 	private _horizontalAlign: "left" | "center" | "right"
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite", (factory, name, config) => new this({
-			factory,
-			name,
-			config,
-			type: "sprite",
-			handle: new Sprite(factory.resolveAsset(config?.image))
-		}))
+		layoutFactory.register("sprite", props => new this(props, new Sprite(props.factory.resolveAsset(props.config?.image))))
 	}
 
-	protected constructor(props: BaseConstructorProperties<SpriteElementConfig>) {
-		super(props)
-		this.handle.anchor.set(0.5, 0.5)
+	protected constructor(props: BaseConstructorProperties<SpriteElementConfig<any>>, handle: Sprite) {
+		super(props, handle)
 		this.texture = this.handle.texture
 		this._scaling = "none"
 		this._horizontalAlign = "left"
@@ -104,6 +97,11 @@ export class SpriteElement extends BaseElement {
 		this.setDirty()
 	}
 
+	public setTextureScale(value: number) {
+		this.width = this.texture.width * value
+		this.height = this.texture.height * value
+	}
+
 	protected crop(rect: number[]) {
 		const texture = this.texture
 		if (texture.noFrame) {
@@ -148,42 +146,45 @@ export class SpriteElement extends BaseElement {
 		if (this.handle.texture != this.texture) {
 			this.handle.texture = this.texture
 		}
-		this.handle.scale.set(1)
+		let scale = [1, 1]
+		const innerWidth = this.innerWidth
+		const innerHeight = this.innerHeight
 		switch (this._scaling) {
 			case "stretch":
-				this.handle.width = this.innerWidth
-				this.handle.height = this.innerHeight
+				scale[0] = innerWidth / this.texture.width
+				scale[1] = innerHeight / this.texture.height
 				break
 			case "contain":
 			case "cover": {
-				const elementWidth = this.innerWidth
-				const elementHeight = this.innerHeight
-				const elementRatio = elementWidth / elementHeight
+				const elementRatio = innerWidth / innerHeight
 				const textureWidth = this.texture.width
 				const textureHeight = this.texture.height
 				const textureRatio = textureWidth / textureHeight
 				if (this._scaling == "contain") {
 					if (elementRatio < textureRatio) {
-						const height = elementWidth / textureRatio
-						this.handle.scale.set(height / textureHeight)
+						const height = innerWidth / textureRatio
+						scale[0] = height / textureHeight
+						scale[1] = scale[0]
 						if (this._verticalAlign == "top") {
-							top -= (elementHeight - height) / 2
+							top -= (innerHeight - height) / 2
 						} else if (this._verticalAlign == "bottom") {
-							top += (elementHeight - height) / 2
+							top += (innerHeight - height) / 2
 						}
 					} else {
-						const width = elementHeight * textureRatio
-						this.handle.scale.set(width / textureWidth)
+						const width = innerHeight * textureRatio
+						scale[0] = width / textureWidth
+						scale[1] = scale[0]
 						if (this._horizontalAlign == "left") {
-							left -= (elementWidth - width) / 2
+							left -= (innerWidth - width) / 2
 						} else if (this._horizontalAlign == "right") {
-							left += (elementWidth - width) / 2
+							left += (innerWidth - width) / 2
 						}
 					}
 				} else {
 					if (elementRatio < textureRatio) {
 						const diff = textureWidth - (textureHeight * elementRatio)
-						this.handle.scale.set(elementHeight / textureHeight)
+						scale[0] = innerHeight / textureHeight
+						scale[1] = scale[0]
 						if (this._horizontalAlign == "left") {
 							this.crop([0, 0, diff, 0])
 						} else if (this._horizontalAlign == "center") {
@@ -193,7 +194,8 @@ export class SpriteElement extends BaseElement {
 						}
 					} else {
 						const diff = textureHeight - (textureWidth / elementRatio)
-						this.handle.scale.set(elementWidth / textureWidth)
+						scale[0] = innerWidth / textureWidth
+						scale[1] = scale[0]
 						if (this._verticalAlign == "top") {
 							this.crop([0, 0, 0, diff])
 						} else if (this._verticalAlign == "middle") {
@@ -206,45 +208,43 @@ export class SpriteElement extends BaseElement {
 				break
 			}
 			case "clipped": {
-				const elementWidth = this.innerWidth
 				const textureWidth = this.texture.width
 				let crop = false
 				let xCrop = [0, 0]
-				if (elementWidth < textureWidth) {
+				if (innerWidth < textureWidth) {
 					crop = true
 					if (this._horizontalAlign == "left") {
-						xCrop[1] = textureWidth - elementWidth
+						xCrop[1] = textureWidth - innerWidth
 					} else if (this._horizontalAlign == "center") {
-						xCrop[0] = (textureWidth - elementWidth) / 2
+						xCrop[0] = (textureWidth - innerWidth) / 2
 						xCrop[1] = xCrop[0]
 					} else {
-						xCrop[0] = textureWidth - elementWidth
+						xCrop[0] = textureWidth - innerWidth
 					}
 				} else {
 					if (this._horizontalAlign == "left") {
-						left -= (elementWidth - textureWidth) / 2
+						left -= (innerWidth - textureWidth) / 2
 					} else if (this._horizontalAlign == "right") {
-						left += (elementWidth - textureWidth) / 2
+						left += (innerWidth - textureWidth) / 2
 					}
 				}
-				const elementHeight = this.innerHeight
 				const textureHeight = this.texture.height
 				let yCrop = [0, 0]
-				if (elementHeight < textureHeight) {
+				if (innerHeight < textureHeight) {
 					crop = true
 					if (this._verticalAlign == "top") {
-						yCrop[1] = textureHeight - elementHeight
+						yCrop[1] = textureHeight - innerHeight
 					} else if (this._verticalAlign == "middle") {
-						yCrop[0] = (textureHeight - elementHeight) / 2
+						yCrop[0] = (textureHeight - innerHeight) / 2
 						yCrop[1] = yCrop[0]
 					} else {
-						yCrop[0] = textureHeight - elementHeight
+						yCrop[0] = textureHeight - innerHeight
 					}
 				} else {
 					if (this._verticalAlign == "top") {
-						top -= (elementHeight - textureHeight) / 2
+						top -= (innerHeight - textureHeight) / 2
 					} else if (this._verticalAlign == "bottom") {
-						top += (elementHeight - textureHeight) / 2
+						top += (innerHeight - textureHeight) / 2
 					}
 				}
 				if (crop) {
@@ -254,18 +254,20 @@ export class SpriteElement extends BaseElement {
 			}
 			default:
 				if (this._verticalAlign == "top") {
-					top -= (this.innerHeight - this.texture.height) / 2
+					top -= (innerHeight - this.texture.height) / 2
 				} else if (this._verticalAlign == "bottom") {
-					top += (this.innerHeight - this.texture.height) / 2
+					top += (innerHeight - this.texture.height) / 2
 				}
 				if (this._horizontalAlign == "left") {
-					left -= (this.innerWidth - this.texture.width) / 2
+					left -= (innerWidth - this.texture.width) / 2
 				} else if (this._horizontalAlign == "right") {
-					left += (this.innerWidth - this.texture.width) / 2
+					left += (innerWidth - this.texture.width) / 2
 				}
 				break
 		}
+		this.handle.scale.set(scale[0] * this._scale, scale[1] * this._scale)
 		this.handle.position.set(left, top)
+		this.handle.anchor.set(this.pivot[0], this.pivot[1])
 	}
 
 	public get contentHeight() {

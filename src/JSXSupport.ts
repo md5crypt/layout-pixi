@@ -1,13 +1,9 @@
-import { LayoutConfig } from "@md5crypt/layout"
-import { ElementTypes } from "./ElementTypes.js"
-import { BaseConfig } from "./BaseElement.js"
+import type { ElementTypes } from "./ElementTypes.js"
+import type{ BaseConfig } from "./BaseElement.js"
+import type { LayoutElementJson } from "./LayoutFactory"
 
 type LayoutElementProps = {
-	[K in keyof ElementTypes]:
-	LayoutConfig<ElementTypes[K]["element"]> &
-	ElementTypes[K]["config"] &
-	{name?: string, metadata?: Record<string, any>} &
-	{children?: ReactNode}
+	[K in keyof ElementTypes]: ElementTypes[K]["config"] & {children?: ReactNode}
 }
 
 declare global {
@@ -18,33 +14,11 @@ declare global {
 		}
 		interface Element {
 			type: keyof ElementTypes
-			name?: string
-			layout?: LayoutConfig<any>
 			config?: BaseConfig
-			metadata?: Record<string, any>
 			children?: Element[]
 		}
 	}
 }
-
-const baseConfigKeys = [
-	"top",
-	"left",
-	"width",
-	"height",
-	"padding",
-	"margin",
-	"flexMode",
-	"flexHorizontalAlign",
-	"flexVerticalAlign",
-	"flexGrow",
-	"ignoreLayout",
-	"enabled",
-	"volatile"
-] as const
-
-const baseConfigKeySet: Exclude<keyof LayoutConfig<any>, typeof baseConfigKeys[number]> extends never ?
-	Set<string> : "baseConfigKeys is missing keys" = new Set(baseConfigKeys)
 
 interface ReactNodeArray extends Array<ReactNode> {}
 export type ReactNode = JSX.Element | ReactNodeArray | false | null | undefined
@@ -64,7 +38,7 @@ export function Fragment(props: {children?: ReactNode}) {
 }
 
 export function Slot(props: {name: string, children?: ReactNode}) {
-	return {type: "jsx-slot" as any, name: props.name, children: props.children || []} as JSX.Element
+	return {type: "jsx-slot" as any, config: {name: props.name}, children: props.children || []} as JSX.Element
 }
 
 export function isFragment(data: JSX.Element) {
@@ -72,7 +46,7 @@ export function isFragment(data: JSX.Element) {
 }
 
 export function toArray(data: JSX.Element) {
-	return data.type as string == "jsx-fragment" ? data.children! : [data]
+	return (data.type as string == "jsx-fragment" ? data.children! : [data]) as LayoutElementJson[]
 }
 
 export function createElement<T extends IntrinsicElementNames | ComponentFunction>(type: T, props: ComponentProps<T>, ...rawChildren: ReactNode[]) {
@@ -91,34 +65,18 @@ export function createElement<T extends IntrinsicElementNames | ComponentFunctio
 			} else if ((value.type as string) == "jsx-fragment") {
 				children.push(...value.children!)
 			} else if ((value.type as string) == "jsx-slot") {
-				slots[value.name!] = value.children
+				slots[value.config!.name!] = value.children
 			} else {
 				children.push(value)
 			}
 		}
 	}
 	if (typeof type == "string") {
-		const result = {
+		return {
 			type,
 			children,
-			layout: {},
-			config: {}
-		} as Record<string, any>
-		if (props) {
-			for (const key in props) {
-				if (key == "name") {
-					result.name = props[key]
-				} else if (key == "metadata") {
-					result.metadata = props[key]
-				} else if (baseConfigKeySet.has(key)) {
-					result.layout[key] = props[key]
-				} else {
-					result.config[key] = props[key]
-				}
-
-			}
-		}
-		return result as JSX.Element
+			config: props
+		} as JSX.Element
 	} else {
 		return type({children, ...props}, slots)
 	}

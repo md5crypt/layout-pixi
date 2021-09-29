@@ -2,7 +2,7 @@ import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElemen
 import LayoutFactory from "./LayoutFactory.js"
 import { Text, TextStyle, TextMetrics, ITextStyle } from "@pixi/text"
 
-export interface TextElementConfig extends BaseConfig {
+export interface TextElementConfig<T extends TextElement = TextElement> extends BaseConfig<T> {
 	text?: string
 	fit?: boolean
 	verticalAlign?: "top" | "bottom" | "middle"
@@ -21,19 +21,14 @@ export class TextElement extends BaseElement {
 	private _verticalAlign: "top" | "bottom" | "middle"
 	private lastSize: [number, number]
 	private _resolution: number
+	private needsRedraw: boolean
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("text", (factory, name, config) => new this({
-			factory,
-			name,
-			config,
-			type: "text",
-			handle: new Text("")
-		}))
+		layoutFactory.register("text", props => new this(props, new Text("")))
 	}
 
-	protected constructor(props: BaseConstructorProperties<TextElementConfig>) {
-		super(props)
+	protected constructor(props: BaseConstructorProperties<TextElementConfig<any>>, handle: Text) {
+		super(props, handle)
 		this.textRect = null
 		this.style = {}
 		this._fit = false
@@ -41,6 +36,7 @@ export class TextElement extends BaseElement {
 		this.lastSize = [0, 0]
 		this._resolution = 1
 		this._text = ""
+		this.needsRedraw = true
 		const config = props.config
 		if (config) {
 			if (config.style) {
@@ -64,16 +60,20 @@ export class TextElement extends BaseElement {
 		}
 	}
 
-	protected setDirty(forceFontRedraw?: boolean) {
-		super.setDirty()
-		const clearTextRect = (
-			forceFontRedraw ||
-			(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
-			(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
-		)
-		if (clearTextRect) {
-			this.textRect = null
+	public setDirty(forceFontRedraw?: boolean) {
+		if (super.setDirty() || forceFontRedraw) {
+			const clearTextRect = (
+				forceFontRedraw ||
+				(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
+				(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
+			)
+			if (clearTextRect) {
+				this.needsRedraw = true
+				this.textRect = null
+			}
+			return true
 		}
+		return false
 	}
 
 	protected onScaleChange(scale: number) {
@@ -86,7 +86,7 @@ export class TextElement extends BaseElement {
 		if (!this._text) {
 			this.textRect = [0, 0]
 		} else {
-			if (this.style.wordWrap) {
+			if (this.style.wordWrap && this.widthReady) {
 				if (this.style.wordWrapWidth != this.width) {
 					this.style.wordWrapWidth = this.width
 					this.handle.style.wordWrapWidth = this.width
@@ -111,15 +111,15 @@ export class TextElement extends BaseElement {
 	}
 
 	public get contentHeight() {
-		if (!this.textRect) {
-			this.meausreText()
+		if (this.needsRedraw) {
+			this.redraw()
 		}
 		return this.textRect![1]
 	}
 
 	public get contentWidth() {
-		if (!this.textRect) {
-			this.meausreText()
+		if (this.needsRedraw) {
+			this.redraw()
 		}
 		return this.textRect![0]
 	}
@@ -240,29 +240,36 @@ export class TextElement extends BaseElement {
 		this.fitText(width, height)
 	}
 
-	protected onUpdate() {
-		super.onUpdate()
-		const width = this.width
-		const height = this.height
-		if (!this.textRect) {
-			this.handle.text = this._text
-			this.handle.style = this.style
-			if (this.style.dropShadowDistance) {
-				// multiply dropShadowDistance by resolution to fix a bug in PIXI code
-				this.handle.style.dropShadowDistance = this.style.dropShadowDistance * (this._resolution * this.globalScale)
-			}
-			if (this._fit) {
-				this.meausreText()
-				if (this.style.wordWrap) {
-					this.fitWrappedText(width, height)
-				} else {
-					this.fitText(width, height)
-				}
+	protected redraw() {
+		this.needsRedraw = false
+		this.handle.text = this._text
+		this.handle.style = this.style
+		if (this.style.dropShadowDistance) {
+			// multiply dropShadowDistance by resolution to fix a bug in PIXI code
+			this.handle.style.dropShadowDistance = this.style.dropShadowDistance * (this._resolution * this.globalScale)
+		}
+		this.meausreText()
+		if (this._fit) {
+			const width = this.widthReady ? this.width : Infinity
+			const height = this.heightReady ? this.height : Infinity
+			if (this.style.wordWrap) {
+				this.fitWrappedText(width, height)
+			} else {
+				this.fitText(width, height)
 			}
 		}
+	}
+
+	protected onUpdate() {
+		super.onUpdate()
+		if (this.needsRedraw) {
+			this.redraw()
+		}
+		const width = this.width
+		const height = this.height
 		this.lastSize[0] != this.width
 		this.lastSize[1] != this.height
-		this.handle.pivot.set(width / 2, height / 2)
+		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
 		let left = this.computedLeft
 		let top = this.computedTop
 		if (this._verticalAlign == "middle") {
@@ -275,6 +282,7 @@ export class TextElement extends BaseElement {
 		} else if (this.style.align == "right") {
 			left += (this.width - this.contentWidth)
 		}
+		this.handle.scale.set(this._scale)
 		this.handle.position.set(left, top)
 	}
 }
