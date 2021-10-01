@@ -329,7 +329,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	protected onInsertElement(element: BaseElement, index: number) {
-		if ((index >= (this.children.length - 1)) || this.handle.sortableChildren) {
+		if ((index >= this.children.length) || this.handle.sortableChildren) {
 			this.handle.addChild(element.handle)
 		} else {
 			const position = this.handle.getChildIndex(this.children[index].handle)
