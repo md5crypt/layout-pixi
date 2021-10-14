@@ -48,6 +48,10 @@ export class Container3dElement extends ContainerElement {
 	public get scale3d() {
 		return this.handle.scale3d
 	}
+
+	public get isFrontFace() {
+		return this.handle.isFrontFace()
+	}
 }
 
 export default Container3dElement

@@ -4,6 +4,83 @@ import { PositioningBox } from "@md5crypt/layout"
 import { Texture } from "@pixi/core"
 import { NineSlicePlane } from "@pixi/mesh-extras"
 
+// @ts-ignore
+class FixedNineSlicePlane extends NineSlicePlane {
+	private _refresh() {
+		const texture = this.texture
+
+		const origWidth = texture.orig.width
+		const origHeight = texture.orig.height
+
+		const trim = texture.trim || {x: 0, y: 0, width: origWidth, height: origHeight}
+
+		const trimTop = trim.y
+		const trimBottom = origHeight - trim.height - trim.y
+
+		const top = trimTop / origHeight
+		const bottom = trimBottom / origHeight
+
+		const topHeight = Math.max(this._topHeight - trimTop, 0)
+		const bottomHeight = Math.max(this._bottomHeight - trimBottom, 0)
+
+		const trimLeft = trim.x
+		const trimRight = origWidth - trim.width - trim.x
+
+		const left = trimLeft / origWidth
+		const right = trimRight / origWidth
+
+		const leftWidth = Math.max(this._leftWidth - trimLeft, 0)
+		const rightWidth = Math.max(this._rightWidth - trimRight, 0)
+
+		// @ts-ignore
+		const scale = this._getMinScale()
+		const vertices = this.vertices
+
+		if (leftWidth > 0) {
+			vertices[0] = vertices[8] = vertices[16] = vertices[24] = trimLeft
+			vertices[2] = vertices[10] = vertices[18] = vertices[26] = trimLeft + leftWidth * scale
+		} else {
+			vertices[0] = vertices[8] = vertices[16] = vertices[24] = vertices[2] = vertices[10] = vertices[18] = vertices[26] = this._width * left
+		}
+
+		if (rightWidth > 0) {
+			vertices[4] = vertices[12] = vertices[20] = vertices[28] = this._width - trimRight - rightWidth * scale
+			vertices[6] = vertices[14] = vertices[22] = vertices[30] = this._width - trimRight
+		} else {
+			vertices[4] = vertices[12] = vertices[20] = vertices[28] = vertices[6] = vertices[14] = vertices[22] = vertices[30] = this._width * (1 - right)
+		}
+
+		if (topHeight > 0) {
+			vertices[1] = vertices[3] = vertices[5] = vertices[7] = trimTop
+			vertices[9] = vertices[11] = vertices[13] = vertices[15] = trimTop + topHeight * scale
+		} else {
+			vertices[1] = vertices[3] = vertices[5] = vertices[7] = vertices[9] = vertices[11] = vertices[13] = vertices[15] = this._height * top
+		}
+
+		if (bottomHeight > 0) {
+			vertices[17] = vertices[19] = vertices[21] = vertices[23] = this._height - trimBottom - bottomHeight * scale
+			vertices[25] = vertices[27] = vertices[29] = vertices[31] = this._height - trimBottom
+		} else {
+			vertices[17] = vertices[19] = vertices[21] = vertices[23] = vertices[25] = vertices[27] = vertices[29] = vertices[31] = this._height * (1 - bottom)
+		}
+
+		const uvs = this.geometry.buffers[1].data
+
+		uvs[0] = uvs[8] = uvs[16] = uvs[24] = left
+		uvs[1] = uvs[3] = uvs[5] = uvs[7] = top
+		uvs[6] = uvs[14] = uvs[22] = uvs[30] = (1 - right)
+		uvs[25] = uvs[27] = uvs[29] = uvs[31] = (1 - bottom)
+
+		uvs[2] = uvs[10] = uvs[18] = uvs[26] = left + (leftWidth / origWidth)
+		uvs[4] = uvs[12] = uvs[20] = uvs[28] = (1 - right) - (rightWidth / origWidth)
+		uvs[9] = uvs[11] = uvs[13] = uvs[15] = top + (topHeight / origHeight)
+		uvs[17] = uvs[19] = uvs[21] = uvs[23] = (1 - bottom) - (bottomHeight / origHeight)
+
+		this.geometry.buffers[0].update()
+		this.geometry.buffers[1].update()
+	}
+}
+
 export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = SlicedSpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
 	tint?: number
@@ -17,7 +94,10 @@ export class SlicedSpriteElement extends BaseElement {
 	private _scaling: "width" | "height" | "none"
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite-sliced", props => new this(props, new NineSlicePlane(props.factory.resolveAsset(props.config?.image), 0, 0, 0, 0)))
+		layoutFactory.register("sprite-sliced", props => new this(
+			props,
+			new FixedNineSlicePlane(props.factory.resolveAsset(props.config?.image), 0, 0, 0, 0) as any as NineSlicePlane
+		))
 	}
 
 	protected constructor(props: BaseConstructorProperties<SlicedSpriteElementConfig<any>>, handle: NineSlicePlane) {

@@ -60,19 +60,11 @@ export class BitmapTextElement extends BaseElement {
 	}
 
 	public setDirty(forceFontRedraw?: boolean) {
-		if (super.setDirty() || forceFontRedraw) {
-			const clearTextRect = (
-				forceFontRedraw ||
-				(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
-				(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
-			)
-			if (clearTextRect) {
-				this.needsRedraw = true
-				this.textRect = null
-			}
-			return true
+		if (forceFontRedraw) {
+			this.textRect = null
 		}
-		return false
+		this.needsRedraw = true
+		return super.setDirty()
 	}
 
 	private get maxWidth() {
@@ -87,6 +79,19 @@ export class BitmapTextElement extends BaseElement {
 	}
 
 	private meausreText(fontSize: number) {
+		const skipRedraw = (
+			this.textRect && (
+				!this.needsRedraw || !(
+					(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
+					(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
+				)
+			)
+		)
+
+		if (skipRedraw) {
+			return
+		}
+
 		if (!this._text || !this.style.fontName) {
 			this.textRect = [0, 0]
 			return
@@ -227,7 +232,6 @@ export class BitmapTextElement extends BaseElement {
 
 	private fitText(width: number, height: number, fontSize: number) {
 		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
-		console.log(fontSize, scale)
 		if (scale < 1) {
 			const result = Math.max(1, Math.floor(fontSize * scale))
 			this.meausreText(result)
@@ -293,20 +297,20 @@ export class BitmapTextElement extends BaseElement {
 		}
 		const width = this.width
 		const height = this.height
-		this.lastSize[0] != this.width
-		this.lastSize[1] != this.height
+		this.lastSize[0] = this.width
+		this.lastSize[1] = this.height
 		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
 		let left = this.computedLeft
 		let top = this.computedTop
 		if (this._verticalAlign == "middle") {
-			top += (this.height - this.contentHeight) / 2
+			top += (this.height - this.contentHeight) * (this._scale / 2)
 		} else if (this._verticalAlign == "bottom") {
-			top += (this.height - this.contentHeight)
+			top += (this.height - this.contentHeight) * this._scale
 		}
 		if (this.style.align == "center") {
-			left += (this.width - this.contentWidth) / 2
+			left += (this.width - this.contentWidth) * (this._scale / 2)
 		} else if (this.style.align == "right") {
-			left += (this.width - this.contentWidth)
+			left += (this.width - this.contentWidth) * this._scale
 		}
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)

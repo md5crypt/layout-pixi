@@ -14,7 +14,7 @@ export interface TextElementConfig<T extends TextElement = TextElement> extends 
 export class TextElement extends BaseElement {
 	declare public readonly handle: Text
 
-	private style: Partial<ITextStyle>
+	private _style: Partial<ITextStyle>
 	private _text!: string
 	private textRect: [number, number] | null
 	private _fit: boolean
@@ -30,7 +30,7 @@ export class TextElement extends BaseElement {
 	protected constructor(props: BaseConstructorProperties<TextElementConfig<any>>, handle: Text) {
 		super(props, handle)
 		this.textRect = null
-		this.style = {}
+		this._style = {}
 		this._fit = false
 		this._verticalAlign = "top"
 		this.lastSize = [0, 0]
@@ -40,7 +40,7 @@ export class TextElement extends BaseElement {
 		const config = props.config
 		if (config) {
 			if (config.style) {
-				this.style = {...config.style}
+				this._style = {...config.style}
 			}
 			if (config.text) {
 				this._text = config.text
@@ -61,34 +61,29 @@ export class TextElement extends BaseElement {
 	}
 
 	public setDirty(forceFontRedraw?: boolean) {
-		if (super.setDirty() || forceFontRedraw) {
-			const clearTextRect = (
-				forceFontRedraw ||
-				(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
-				(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
-			)
-			if (clearTextRect) {
-				this.needsRedraw = true
-				this.textRect = null
-			}
-			return true
+		if (forceFontRedraw) {
+			this.textRect = null
 		}
-		return false
+		this.needsRedraw = true
+		return super.setDirty()
 	}
 
 	protected onScaleChange(scale: number) {
 		super.onScaleChange(scale)
-		this.handle.resolution = this._resolution * this.globalScale
-		this.setDirty(true)
+		const resolution = this._resolution * this._parentScale
+		if (this.handle.resolution != resolution) {
+			this.handle.resolution = resolution
+			this.setDirty(true)
+		}
 	}
 
 	private meausreText() {
 		if (!this._text) {
 			this.textRect = [0, 0]
 		} else {
-			if (this.style.wordWrap && this.widthReady) {
-				if (this.style.wordWrapWidth != this.width) {
-					this.style.wordWrapWidth = this.width
+			if (this._style.wordWrap && this.widthReady) {
+				if (this._style.wordWrapWidth != this.width) {
+					this._style.wordWrapWidth = this.width
 					this.handle.style.wordWrapWidth = this.width
 				}
 			}
@@ -102,7 +97,7 @@ export class TextElement extends BaseElement {
 
 	public set resolution(value: number) {
 		this._resolution = value
-		this.handle.resolution = this._resolution * this.globalScale
+		this.handle.resolution = this._resolution * this._parentScale
 		this.setDirty(true)
 	}
 
@@ -163,45 +158,49 @@ export class TextElement extends BaseElement {
 		this.setDirty(true)
 	}
 
+	public get style() {
+		return this._style as Readonly<Partial<ITextStyle>>
+	}
+
 	public setStyle(style: Partial<ITextStyle>) {
-		this.style = {...style}
+		this._style = {...style}
 		this.setDirty(true)
 	}
 
 	public updateStyle(style: Partial<ITextStyle>) {
-		Object.assign(this.style, style)
+		Object.assign(this._style, style)
 		this.setDirty(true)
 	}
 
 	public setText(text: string, style?: Partial<ITextStyle>) {
 		this._text = text
 		if (style) {
-			this.style = {...style}
+			this._style = {...style}
 		}
 		this.setDirty(true)
 	}
 
 	private updateFontSize(value: number) {
 		this.handle.style.fontSize = value
-		const scale = value / (this.style.fontSize as number)
-		if (this.style.lineHeight) {
-			this.handle.style.lineHeight = this.style.lineHeight * scale
+		const scale = value / (this._style.fontSize as number)
+		if (this._style.lineHeight) {
+			this.handle.style.lineHeight = this._style.lineHeight * scale
 		}
-		if (this.style.leading) {
-			this.handle.style.leading = this.style.leading * scale
+		if (this._style.leading) {
+			this.handle.style.leading = this._style.leading * scale
 		}
-		if (this.style.letterSpacing) {
-			this.handle.style.letterSpacing = this.style.letterSpacing * scale
+		if (this._style.letterSpacing) {
+			this.handle.style.letterSpacing = this._style.letterSpacing * scale
 		}
-		if (this.style.strokeThickness) {
-			this.handle.style.strokeThickness = this.style.strokeThickness * scale
+		if (this._style.strokeThickness) {
+			this.handle.style.strokeThickness = this._style.strokeThickness * scale
 		}
-		if (this.style.dropShadowDistance) {
+		if (this._style.dropShadowDistance) {
 			// multiply dropShadowDistance by resolution to fix a bug in PIXI code
-			this.handle.style.dropShadowDistance = (this.style.dropShadowDistance * scale) * (this._resolution * this.globalScale)
+			this.handle.style.dropShadowDistance = (this._style.dropShadowDistance * scale) * (this._resolution * this._parentScale)
 		}
-		if (this.style.dropShadowBlur) {
-			this.handle.style.dropShadowBlur = this.style.dropShadowBlur * scale
+		if (this._style.dropShadowBlur) {
+			this.handle.style.dropShadowBlur = this._style.dropShadowBlur * scale
 		}
 	}
 
@@ -214,7 +213,7 @@ export class TextElement extends BaseElement {
 	}
 
 	private fitWrappedText(width: number, height: number) {
-		let upperBound = this.style.fontSize as number
+		let upperBound = this._style.fontSize as number
 		let lowerBound = upperBound * Math.min(width / this.textRect![0], height / this.textRect![1])
 		let lastSize = upperBound
 		if (lowerBound >= upperBound) {
@@ -241,18 +240,29 @@ export class TextElement extends BaseElement {
 	}
 
 	protected redraw() {
+		const skipRedraw = (
+			this.textRect && (
+				!this.needsRedraw || !(
+					(this._style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
+					(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
+				)
+			)
+		)
+		if (skipRedraw) {
+			return
+		}
 		this.needsRedraw = false
 		this.handle.text = this._text
-		this.handle.style = this.style
-		if (this.style.dropShadowDistance) {
+		this.handle.style = this._style
+		if (this._style.dropShadowDistance) {
 			// multiply dropShadowDistance by resolution to fix a bug in PIXI code
-			this.handle.style.dropShadowDistance = this.style.dropShadowDistance * (this._resolution * this.globalScale)
+			this.handle.style.dropShadowDistance = this._style.dropShadowDistance * (this._resolution * this._parentScale)
 		}
 		this.meausreText()
 		if (this._fit) {
 			const width = this.widthReady ? this.width : Infinity
 			const height = this.heightReady ? this.height : Infinity
-			if (this.style.wordWrap) {
+			if (this._style.wordWrap) {
 				this.fitWrappedText(width, height)
 			} else {
 				this.fitText(width, height)
@@ -267,20 +277,20 @@ export class TextElement extends BaseElement {
 		}
 		const width = this.width
 		const height = this.height
-		this.lastSize[0] != this.width
-		this.lastSize[1] != this.height
+		this.lastSize[0] = this.width
+		this.lastSize[1] = this.height
 		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
 		let left = this.computedLeft
 		let top = this.computedTop
 		if (this._verticalAlign == "middle") {
-			top += (this.height - this.contentHeight) / 2
+			top += (this.height - this.contentHeight) * (this._scale / 2)
 		} else if (this._verticalAlign == "bottom") {
-			top += (this.height - this.contentHeight)
+			top += (this.height - this.contentHeight) * this._scale
 		}
-		if (this.style.align == "center") {
-			left += (this.width - this.contentWidth) / 2
-		} else if (this.style.align == "right") {
-			left += (this.width - this.contentWidth)
+		if (this._style.align == "center") {
+			left += (this.width - this.contentWidth) * (this._scale / 2)
+		} else if (this._style.align == "right") {
+			left += (this.width - this.contentWidth) * this._scale
 		}
 		this.handle.scale.set(this._scale)
 		this.handle.position.set(left, top)
