@@ -198,8 +198,22 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		const result = {
 			top: this.innerTop,
 			left: this.innerLeft,
-			width: this.width * this._scale,
-			height: this.height * this._scale
+			width: 0,
+			height: 0
+		}
+		if (this._width == null && this.flexMode == "none") {
+			const bounds = this.horizontalBounds
+			result.left -= (result.left - bounds[0]) * this._scale
+			result.width = (bounds[1] - bounds[0]) * this._scale
+		} else {
+			result.width = this.width * this._scale
+		}
+		if (this._height == null && this.flexMode == "none") {
+			const bounds = this.verticalBounds
+			result.top -= (result.top - bounds[0]) * this._scale
+			result.height = (bounds[1] - bounds[0]) * this._scale
+		} else {
+			result.height = this.height * this._scale
 		}
 		let parent = this._parent
 		while (parent) {
