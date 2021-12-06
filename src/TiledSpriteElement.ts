@@ -53,6 +53,7 @@ export class TiledSpriteElement extends BaseElement {
 		this.handle.width = this.innerWidth
 		this.handle.height = this.innerHeight
 		this.handle.scale.set(this._scale)
+		this.applyFlip()
 	}
 
 	public get contentHeight() {

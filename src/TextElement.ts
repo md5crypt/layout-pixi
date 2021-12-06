@@ -60,12 +60,9 @@ export class TextElement extends BaseElement {
 		}
 	}
 
-	public setDirty(forceFontRedraw?: boolean) {
-		if (forceFontRedraw) {
-			this.textRect = null
-		}
+	public setDirty(force?: boolean) {
 		this.needsRedraw = true
-		return super.setDirty()
+		return super.setDirty(force)
 	}
 
 	protected onScaleChange(scale: number) {
@@ -73,7 +70,8 @@ export class TextElement extends BaseElement {
 		const resolution = this._resolution * this._parentScale
 		if (this.handle.resolution != resolution) {
 			this.handle.resolution = resolution
-			this.setDirty(true)
+			this.textRect = null
+			this.setDirty()
 		}
 	}
 
@@ -98,7 +96,8 @@ export class TextElement extends BaseElement {
 	public set resolution(value: number) {
 		this._resolution = value
 		this.handle.resolution = this._resolution * this._parentScale
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public get resolution() {
@@ -126,7 +125,8 @@ export class TextElement extends BaseElement {
 	public set fit(value: boolean) {
 		if (this._fit != value) {
 			this._fit = value
-			this.setDirty(true)
+			this.textRect = null
+			this.setDirty()
 		}
 	}
 
@@ -155,7 +155,8 @@ export class TextElement extends BaseElement {
 
 	public set text(value: string) {
 		this._text = value
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public get style() {
@@ -164,12 +165,14 @@ export class TextElement extends BaseElement {
 
 	public setStyle(style: Partial<ITextStyle>) {
 		this._style = {...style}
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public updateStyle(style: Partial<ITextStyle>) {
 		Object.assign(this._style, style)
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public setText(text: string, style?: Partial<ITextStyle>) {
@@ -177,7 +180,8 @@ export class TextElement extends BaseElement {
 		if (style) {
 			this._style = {...style}
 		}
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	private updateFontSize(value: number) {
@@ -293,6 +297,7 @@ export class TextElement extends BaseElement {
 			left += (this.width - this.contentWidth) * this._scale
 		}
 		this.handle.scale.set(this._scale)
+		this.applyFlip()
 		this.handle.position.set(left, top)
 	}
 }

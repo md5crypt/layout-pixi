@@ -86,6 +86,7 @@ export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = Slice
 	tint?: number
 	slices?: PositioningBox
 	scaling?: "width" | "height" | "none"
+	buttonMode?: boolean
 }
 
 export class SlicedSpriteElement extends BaseElement {
@@ -113,6 +114,9 @@ export class SlicedSpriteElement extends BaseElement {
 			}
 			if (config.scaling) {
 				this._scaling = config.scaling
+			}
+			if (config.buttonMode !== undefined) {
+				this.handle.buttonMode = config.buttonMode
 			}
 		}
 	}
@@ -170,6 +174,14 @@ export class SlicedSpriteElement extends BaseElement {
 		return this._scaling
 	}
 
+	public get buttonMode() {
+		return this.handle.buttonMode
+	}
+
+	public set buttonMode(value: boolean) {
+		this.handle.buttonMode = value
+	}
+
 	protected onUpdate() {
 		super.onUpdate()
 		let scale = 1
@@ -188,6 +200,7 @@ export class SlicedSpriteElement extends BaseElement {
 			this.handle.width = this.innerWidth
 			this.handle.height = this.innerHeight
 		}
+		this.applyFlip()
 		this.handle.position.set(this.computedLeft, this.computedTop)
 		this.handle.pivot.set(this.handle.width * this.pivot[0], this.handle.height * this.pivot[1])
 	}

@@ -9,7 +9,6 @@ import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
 export interface BaseConfig<T extends BaseElement = BaseElement> extends LayoutElementConfig<T> {
 	scale?: number
 	mask?: boolean
-	maskObject?: string
 	sorted?: boolean
 	zIndex?: number
 	alpha?: number
@@ -37,6 +36,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	protected _anchor: [number, number]
 	protected _pivot: [number, number]
 	protected _parentScale: number
+	protected _flipped?: "vertical" | "horizontal"
 
 	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: Container) {
 		super(props)
@@ -101,6 +101,20 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		}
 	}
 
+	protected applyFlip() {
+		const value = this._flipped
+		if (value == "vertical") {
+			this.handle.scale.x = Math.abs(this.handle.scale.x)
+			this.handle.scale.y = -Math.abs(this.handle.scale.x)
+		} else if (value == "horizontal") {
+			this.handle.scale.x = -Math.abs(this.handle.scale.x)
+			this.handle.scale.y = Math.abs(this.handle.scale.y)
+		} else {
+			this.handle.scale.x = Math.abs(this.handle.scale.x)
+			this.handle.scale.y = Math.abs(this.handle.scale.y)
+		}
+	}
+
 	public get innerTop() {
 		return this._anchor[1] ? super.innerTop - this._anchor[1] * this._scale * this.height : super.innerTop
 	}
@@ -144,24 +158,11 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public get flipped() {
-		if (this.handle.scale.x >= 0 && this.handle.scale.y >= 0) {
-			return false
-		} else {
-			return (this.handle.scale.x >= 0) ? "vertical" : "horizontal"
-		}
+		return this._flipped || false
 	}
 
 	public set flipped(value: false | "vertical" | "horizontal") {
-		if (value == "vertical") {
-			this.handle.scale.x = Math.abs(this.handle.scale.x)
-			this.handle.scale.y = -Math.abs(this.handle.scale.x)
-		} else if (value == "horizontal") {
-			this.handle.scale.x = -Math.abs(this.handle.scale.x)
-			this.handle.scale.y = Math.abs(this.handle.scale.y)
-		} else {
-			this.handle.scale.x = Math.abs(this.handle.scale.x)
-			this.handle.scale.y = Math.abs(this.handle.scale.y)
-		}
+		this._flipped = value || undefined
 	}
 
 	public get interactive() {

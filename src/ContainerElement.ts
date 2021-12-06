@@ -48,6 +48,7 @@ export class ContainerElement extends BaseElement {
 		)
 		this.handle.pivot.set(this.width * this.pivot[0], this.height * this.pivot[1])
 		this.handle.scale.set(this._scale)
+		this.applyFlip()
 	}
 }
 

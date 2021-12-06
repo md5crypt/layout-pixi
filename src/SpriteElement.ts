@@ -2,13 +2,14 @@ import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElemen
 import { LayoutFactory } from "./LayoutFactory.js"
 
 import { Texture } from "@pixi/core"
-import { Rectangle } from "@pixi/math"
+import { Rectangle, groupD8 } from "@pixi/math"
 import { Sprite } from "@pixi/sprite"
 
 type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover"
 
 export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
+	buttonMode?: boolean
 	scaling?: ScalingType
 	verticalAlign?: "top" | "middle" | "bottom"
 	horizontalAlign?: "left" | "center" | "right"
@@ -45,6 +46,9 @@ export class SpriteElement extends BaseElement {
 			}
 			if (config.verticalAlign) {
 				this._verticalAlign = config.verticalAlign
+			}
+			if (config.buttonMode !== undefined) {
+				this.handle.buttonMode = config.buttonMode
 			}
 		}
 	}
@@ -102,6 +106,14 @@ export class SpriteElement extends BaseElement {
 		this.height = this.texture.height * value
 	}
 
+	public get buttonMode() {
+		return this.handle.buttonMode
+	}
+
+	public set buttonMode(value: boolean) {
+		this.handle.buttonMode = value
+	}
+
 	protected crop(rect: number[]) {
 		const texture = this.texture
 		if (texture.noFrame) {
@@ -111,17 +123,18 @@ export class SpriteElement extends BaseElement {
 					rect[0],
 					rect[1],
 					texture.orig.width - rect[0] - rect[2],
-					texture.orig.height - rect[1] - rect[3]
+					texture.orig.height - rect[1] - rect[3],
 				)
 			)
 		} else {
+			const origRect = (texture.rotate & (groupD8.S | groupD8.N)) ? [rect[1], rect[0], rect[3], rect[2]] : rect
 			this.handle.texture = new Texture(
 				texture.baseTexture,
 				new Rectangle(
-					texture.frame.x + rect[0],
-					texture.frame.y + rect[1],
-					texture.frame.width - rect[0] - rect[2],
-					texture.frame.height - rect[1] - rect[3]
+					texture.frame.x + origRect[0],
+					texture.frame.y + origRect[1],
+					texture.frame.width - origRect[0] - origRect[2],
+					texture.frame.height - origRect[1] - origRect[3]
 				),
 				new Rectangle(
 					0,
@@ -134,7 +147,8 @@ export class SpriteElement extends BaseElement {
 					texture.trim.y,
 					texture.trim.width - rect[0] - rect[2],
 					texture.trim.height - rect[1] - rect[3]
-				)
+				),
+				texture.rotate
 			)
 		}
 	}
@@ -266,6 +280,7 @@ export class SpriteElement extends BaseElement {
 				break
 		}
 		this.handle.scale.set(scale[0] * this._scale, scale[1] * this._scale)
+		this.applyFlip()
 		this.handle.position.set(left, top)
 		this.handle.anchor.set(this.pivot[0], this.pivot[1])
 	}

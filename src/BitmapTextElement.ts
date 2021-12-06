@@ -59,12 +59,9 @@ export class BitmapTextElement extends BaseElement {
 		}
 	}
 
-	public setDirty(forceFontRedraw?: boolean) {
-		if (forceFontRedraw) {
-			this.textRect = null
-		}
+	public setDirty(force?: boolean) {
 		this.needsRedraw = true
-		return super.setDirty()
+		return super.setDirty(force)
 	}
 
 	private get maxWidth() {
@@ -188,7 +185,8 @@ export class BitmapTextElement extends BaseElement {
 	public set fit(value: boolean) {
 		if (this._fit != value) {
 			this._fit = value
-			this.setDirty(true)
+			this.textRect = null
+			this.setDirty()
 		}
 	}
 
@@ -209,17 +207,20 @@ export class BitmapTextElement extends BaseElement {
 
 	public set text(value: string) {
 		this._text = value
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public setStyle(style: Partial<IBitmapTextStyle & {wordWrap: boolean}>) {
 		this.style = {...style}
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public updateStyle(style: Partial<IBitmapTextStyle & {wordWrap: boolean}>) {
 		Object.assign(this.style, style)
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	public setText(text: string, style?: Partial<IBitmapTextStyle & {wordWrap: boolean}>) {
@@ -227,7 +228,8 @@ export class BitmapTextElement extends BaseElement {
 		if (style) {
 			this.style = {...style}
 		}
-		this.setDirty(true)
+		this.textRect = null
+		this.setDirty()
 	}
 
 	private fitText(width: number, height: number, fontSize: number) {
@@ -316,6 +318,7 @@ export class BitmapTextElement extends BaseElement {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 		this.handle.scale.set(this._scale)
+		this.applyFlip()
 		this.handle.position.set(left, top)
 	}
 }
