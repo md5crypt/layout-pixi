@@ -65,7 +65,7 @@ export class TextElement extends BaseElement {
 		return super.setDirty(force)
 	}
 
-	protected onScaleChange(scale: number) {
+	public onScaleChange(scale: number) {
 		super.onScaleChange(scale)
 		const resolution = this._resolution * this._parentScale
 		if (this.handle.resolution != resolution) {

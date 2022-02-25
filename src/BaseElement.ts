@@ -1,15 +1,19 @@
 import { LayoutElement, LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
-import { Container } from "@pixi/display"
-import { Graphics } from "@pixi/graphics"
-import { Sprite } from "@pixi/sprite"
-import type {} from "@pixi/interaction"
+import { Container, DisplayObject } from "@pixi/display"
+import type { InteractionEvent } from "@pixi/interaction"
 
 import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
 
+export type EventTypeName = (
+	"click" | "mousedown" | "mousemove" | "mouseout" | "mouseover" | "mouseup" |
+	"mouseupoutside" | "pointercancel" | "pointerdown" | "pointermove" | "pointerout" |
+	"pointerover" | "pointertap" | "pointerup" | "pointerupoutside" | "rightclick" |
+	"rightdown" | "rightup" | "rightupoutside" | "tap" | "touchcancel" | "touchend" |
+	"touchendoutside" | "touchmove" | "touchstart"
+)
+
 export interface BaseConfig<T extends BaseElement = BaseElement> extends LayoutElementConfig<T> {
 	scale?: number
-	mask?: boolean
-	sorted?: boolean
 	zIndex?: number
 	alpha?: number
 	rotation?: number
@@ -18,6 +22,7 @@ export interface BaseConfig<T extends BaseElement = BaseElement> extends LayoutE
 	noPropagation?: boolean
 	anchor?: [number, number] | number
 	pivot?: [number, number] | number
+	buttonMode?: boolean
 }
 
 export interface BaseConstructorProperties<T> extends LayoutElementConstructorProperties<T> {
@@ -28,17 +33,15 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	declare public readonly children: BaseElement[]
 	declare public readonly factory: LayoutFactory
 
-	public readonly handle: Container
+	public readonly handle: DisplayObject
 	private hidden: boolean
-	private _mask: boolean
-	private _maskObject?: Sprite | Graphics
 	protected _scale: number
 	protected _anchor: [number, number]
 	protected _pivot: [number, number]
 	protected _parentScale: number
 	protected _flipped?: "vertical" | "horizontal"
 
-	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: Container) {
+	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: DisplayObject) {
 		super(props)
 		this.handle = handle
 		this.hidden = false
@@ -46,21 +49,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		this._pivot = [0.5, 0.5]
 		this._parentScale = 1
 		this._scale = 1
-		this._mask = false
 
 		const config = props.config
 		if (config) {
-			if (config.mask) {
-				this._mask = true
-			}
 			if (config.enabled === false) {
 				this.handle.visible = false
 			}
 			if (config.zIndex) {
 				this.handle.zIndex = config.zIndex
-			}
-			if (config.sorted) {
-				this.handle.sortableChildren = true
 			}
 			if (config.interactive) {
 				this.interactive = true
@@ -98,6 +94,9 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 					this._pivot[1] = config.pivot
 				}
 			}
+			if (config.buttonMode !== undefined) {
+				this.handle.buttonMode = config.buttonMode
+			}
 		}
 	}
 
@@ -105,7 +104,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		const value = this._flipped
 		if (value == "vertical") {
 			this.handle.scale.x = Math.abs(this.handle.scale.x)
-			this.handle.scale.y = -Math.abs(this.handle.scale.x)
+			this.handle.scale.y = -Math.abs(this.handle.scale.y)
 		} else if (value == "horizontal") {
 			this.handle.scale.x = -Math.abs(this.handle.scale.x)
 			this.handle.scale.y = Math.abs(this.handle.scale.y)
@@ -121,14 +120,6 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 
 	public get innerLeft() {
 		return this._anchor[0] ? super.innerLeft - this._anchor[0] * this._scale * this.width : super.innerLeft
-	}
-
-	public get sorted() {
-		return this.handle.sortableChildren
-	}
-
-	public set sorted(value: boolean) {
-		this.handle.sortableChildren = value
 	}
 
 	public get zIndex() {
@@ -163,6 +154,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 
 	public set flipped(value: false | "vertical" | "horizontal") {
 		this._flipped = value || undefined
+		this.setDirty()
 	}
 
 	public get interactive() {
@@ -204,15 +196,15 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		}
 		if (this._width == null && this.flexMode == "none") {
 			const bounds = this.horizontalBounds
-			result.left -= (result.left - bounds[0]) * this._scale
-			result.width = (bounds[1] - bounds[0]) * this._scale
+			result.left -= result.left - bounds[0]
+			result.width = bounds[1] - bounds[0]
 		} else {
 			result.width = this.width * this._scale
 		}
 		if (this._height == null && this.flexMode == "none") {
 			const bounds = this.verticalBounds
-			result.top -= (result.top - bounds[0]) * this._scale
-			result.height = (bounds[1] - bounds[0]) * this._scale
+			result.top -= result.top - bounds[0]
+			result.height = bounds[1] - bounds[0]
 		} else {
 			result.height = this.height * this._scale
 		}
@@ -236,7 +228,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		if (!this.widthReady) {
 			return [0, 0]
 		}
-		const width = this.width
+		const width = this.width * this.scale
 		const offset = this.innerLeft
 		if (width || this._width === 0) {
 			return [offset, offset + width]
@@ -255,7 +247,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		if (!this.heightReady) {
 			return [0, 0]
 		}
-		const height = this.height
+		const height = this.height * this.scale
 		const offset = this.innerTop
 		if (height || this._height === 0) {
 			return [offset, offset + height]
@@ -268,39 +260,6 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 			max = Math.max(max, bounds[1])
 		}
 		return isFinite(min + max) ? [offset + min, offset + max] : [offset, offset]
-	}
-
-	public get mask() {
-		return this.handle.mask != null
-	}
-
-	public set mask(value: boolean) {
-		if (this._mask != value) {
-			if (this._mask) {
-				if (this.handle.mask) {
-					if (!this._maskObject) {
-						this.handle.removeChild(this.handle.mask as Container)
-					}
-					this.handle.mask = null
-				}
-			} else {
-				this.setDirty()
-			}
-			this._mask = value
-		}
-	}
-
-	public get maskObject() {
-		return this._maskObject || null
-	}
-
-	public set maskObject(value: Sprite | Graphics | BaseElement | null) {
-		if (this.handle.mask && !this._maskObject) {
-			this.handle.removeChild(this.handle.mask as Container)
-		}
-		this._maskObject = value instanceof BaseElement ? (value.handle as any) : (value || undefined)
-		this.handle.mask = null
-		this.setDirty()
 	}
 
 	public get anchor() {
@@ -335,25 +294,29 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 		this.setDirty()
 	}
 
-	public on(event: string, callback: Function) {
-		this.handle.on(event, callback as any)
+	public get buttonMode() {
+		return this.handle.buttonMode
 	}
 
-	protected onRemoveElement(index: number) {
-		this.handle.removeChild(this.children[index].handle)
+	public set buttonMode(value: boolean) {
+		this.handle.buttonMode = value
 	}
 
-	protected onInsertElement(element: BaseElement, index: number) {
-		if ((index >= this.children.length) || this.handle.sortableChildren) {
-			this.handle.addChild(element.handle)
+	public on(event: EventTypeName, element: string, callback: (event: InteractionEvent) => void): void
+	public on(event: EventTypeName, element: string[], callback: (event: InteractionEvent) => void): void
+	public on(event: EventTypeName, callback: (event: InteractionEvent) => void): void
+	public on(event: EventTypeName, arg1: string | string[] | ((event: InteractionEvent) => void), arg2?: (event: InteractionEvent) => void) {
+		if (arg2 === undefined) {
+			this.handle.on(event, arg1 as any)
 		} else {
-			const position = this.handle.getChildIndex(this.children[index].handle)
-			this.handle.addChildAt(element.handle, position)
+			const elements = Array.isArray(arg1) ? arg1 : [arg1] as string[]
+			for (const element of elements ) {
+				this.getElement(element).on(event, arg2 as any)
+			}
 		}
-		element.onScaleChange(this._parentScale * this._scale)
 	}
 
-	protected onScaleChange(parentScale: number) {
+	public onScaleChange(parentScale: number) {
 		this._parentScale = parentScale
 		for (let i = 0; i < this.children.length; i += 1) {
 			this.children[i].onScaleChange(parentScale * this._scale)
@@ -374,26 +337,6 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 
 	protected onUpdate() {
 		this.handle.visible = this._enabled && !this.hidden
-		if (this._mask) {
-			if (this._maskObject) {
-				this.handle.mask = this._maskObject
-			} else {
-				const graphics = new Graphics()
-				graphics.beginFill(0xFFFFFF)
-				graphics.drawRect(
-					this._padding.left,
-					this._padding.top,
-					this.innerWidth,
-					this.innerHeight
-				)
-				graphics.endFill()
-				if (this.handle.mask) {
-					this.handle.removeChild(this.handle.mask as Container)
-				}
-				this.handle.addChild(graphics)
-				this.handle.mask = graphics
-			}
-		}
 	}
 }
 

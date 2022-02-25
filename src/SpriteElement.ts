@@ -9,11 +9,11 @@ type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover"
 
 export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
-	buttonMode?: boolean
 	scaling?: ScalingType
 	verticalAlign?: "top" | "middle" | "bottom"
 	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
+	roundPixels?: boolean
 }
 
 export class SpriteElement extends BaseElement {
@@ -47,8 +47,8 @@ export class SpriteElement extends BaseElement {
 			if (config.verticalAlign) {
 				this._verticalAlign = config.verticalAlign
 			}
-			if (config.buttonMode !== undefined) {
-				this.handle.buttonMode = config.buttonMode
+			if (config.roundPixels !== undefined) {
+				this.handle.roundPixels = config.roundPixels
 			}
 		}
 	}
@@ -72,6 +72,14 @@ export class SpriteElement extends BaseElement {
 
 	public set tint(value: number) {
 		this.handle.tint = value
+	}
+
+	public get roundPixels() {
+		return this.handle.roundPixels
+	}
+
+	public set roundPixels(value: boolean) {
+		this.handle.roundPixels = value
 	}
 
 	public get scaling() {
@@ -106,13 +114,6 @@ export class SpriteElement extends BaseElement {
 		this.height = this.texture.height * value
 	}
 
-	public get buttonMode() {
-		return this.handle.buttonMode
-	}
-
-	public set buttonMode(value: boolean) {
-		this.handle.buttonMode = value
-	}
 
 	protected crop(rect: number[]) {
 		const texture = this.texture

@@ -87,6 +87,7 @@ export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = Slice
 	slices?: PositioningBox
 	scaling?: "width" | "height" | "none"
 	buttonMode?: boolean
+	roundPixels?: boolean
 }
 
 export class SlicedSpriteElement extends BaseElement {
@@ -117,6 +118,9 @@ export class SlicedSpriteElement extends BaseElement {
 			}
 			if (config.buttonMode !== undefined) {
 				this.handle.buttonMode = config.buttonMode
+			}
+			if (config.roundPixels !== undefined) {
+				this.handle.roundPixels = config.roundPixels
 			}
 		}
 	}
@@ -163,6 +167,14 @@ export class SlicedSpriteElement extends BaseElement {
 
 	public set tint(value: number) {
 		this.handle.tint = value
+	}
+
+	public get roundPixels() {
+		return this.handle.roundPixels
+	}
+
+	public set roundPixels(value: boolean) {
+		this.handle.roundPixels = value
 	}
 
 	public set scaling(value: "none" | "width" | "height") {

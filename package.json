@@ -16,6 +16,10 @@
 				"./lib/projection/*",
 				"./lib/projection/index.d.ts"
 			],
+			"sdfText": [
+				"./lib/sdfText/*",
+				"./lib/sdfText/index.d.ts"
+			],
 			"*": [
 				"./lib/*",
 				"./lib/index.d.ts"
@@ -26,6 +30,7 @@
 		".": "./lib/index.js",
 		"./particles": "./lib/particles",
 		"./projection": "./lib/projection",
+		"./sdfText": "./lib/sdfText",
 		"./": "./lib/"
 	},
 	"files": [
