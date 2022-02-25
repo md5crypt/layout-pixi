@@ -5,6 +5,7 @@ import { createIndicesForQuads } from "@pixi/utils"
 import SdfTextShader from "./SdfTextShader.js"
 
 export const enum SdfTextConstants {
+	INDICES_PER_QUAD = 6,
 	VERTICES_PER_QUAD = 4,
 	WORDS_PER_VERTEX = 6,
 	WORDS_PER_QUAD = VERTICES_PER_QUAD * WORDS_PER_VERTEX,
@@ -83,7 +84,7 @@ export class SdfTextRenderer extends ObjectRenderer {
 		}
 		this._geometry.getBuffer("aVertexPosition").update(vertexData)
 		this.renderer.geometry.bind(this._geometry, this._shader)
-		this.renderer.geometry.draw(DRAW_MODES.TRIANGLES, 6 * (vertexData.length / SdfTextConstants.WORDS_PER_QUAD), 0)
+		this.renderer.geometry.draw(DRAW_MODES.TRIANGLES, SdfTextConstants.INDICES_PER_QUAD * (vertexData.length / SdfTextConstants.WORDS_PER_QUAD), 0)
 		this._batch = []
 		this._batchSize = 0
 	}

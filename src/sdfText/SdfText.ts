@@ -20,7 +20,6 @@ interface CharRenderData extends RichTextChar {
 	font: InternalSdfFontData
 	charData: InternalSdfFontCharData | null
 	tint: number
-	space: boolean
 	scale: number
 	xOffset: number
 	x: number
@@ -122,7 +121,7 @@ export class SdfText extends DisplayObject {
 	private _fontScale: number
 	private _baseLineOffset: number
 
-	public sortDirty = false
+	public sortDirty: boolean
 	public flush: boolean
 	public forceBatch: boolean
 
@@ -145,6 +144,7 @@ export class SdfText extends DisplayObject {
 		this._lines = null
 		this._fontScale = 1
 		this._baseLineOffset = 0
+		this.sortDirty = false
 	}
 
 	private generateCharRenderData() {
@@ -229,17 +229,13 @@ export class SdfText extends DisplayObject {
 
 			lastSymbol = char.symbol
 
-			const charXOffset = xOffset + charData.xoffset * currentScale
-
-			char.tint = currentStyle.tint
 			char.line = currentLine
 			char.font = currentFont
 			char.charData = charData
-			char.space = char.symbol == Ascii.SPACE
 			char.scale = currentScale
-			char.xOffset = charXOffset
+			char.xOffset = xOffset + charData.xoffset * currentScale
 
-			lineWidth = charXOffset + charData.width * currentScale
+			lineWidth = char.xOffset + charData.width * currentScale
 			lineHeight = Math.max(currentFont.common.lineHeight * currentScale, lineHeight)
 			lineBase = Math.max(currentFont.common.base * currentScale, lineBase)
 
@@ -301,11 +297,12 @@ export class SdfText extends DisplayObject {
 				currentLine = char.line
 				lineAlignOffset = currentLine.alignOffset
 			}
-			if (char.space) {
+			if (char.symbol == Ascii.SPACE) {
 				lineAlignOffset += currentLine.justifySpacer
 			}
 			const texture = char.charData.texture
 			if (texture) {
+				char.tint = char.style.tint
 				char.distance = char.font.distanceField.distanceRange * char.scale
 				char.uvs = texture._uvs.uvsFloat32
 				char.width = texture.orig.width * char.scale
@@ -436,7 +433,7 @@ export class SdfText extends DisplayObject {
 		// no-op
 	}
 
-	public removeChild(child: DisplayObject): void {
+	public removeChild(child: DisplayObject) {
 		// no-op
 	}
 
