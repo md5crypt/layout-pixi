@@ -12,10 +12,6 @@ export class SdfTextFlushBarrierElement extends BaseElement {
 	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: SdfTextFlushBarrier) {
 		super(props, handle)
 	}
-
-	protected onUpdate() {
-		// no-op
-	}
 }
 
 export default SdfTextFlushBarrierElement

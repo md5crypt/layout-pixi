@@ -14,10 +14,12 @@ export class SdfTextFlushBarrier extends DisplayObject {
 	}
 
 	public render(renderer: Renderer) {
-		const plugin = (renderer.plugins.sdfText as SdfTextRenderer)
-		if (!plugin.empty) {
-			renderer.batch.flush()
-			plugin.flush()
+		if (this.visible && this.renderable) {
+			const plugin = (renderer.plugins.sdfText as SdfTextRenderer)
+			if (!plugin.empty) {
+				renderer.batch.flush()
+				plugin.flush()
+			}
 		}
 	}
 }

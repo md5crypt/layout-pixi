@@ -1,5 +1,5 @@
 import { LayoutElement, LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
-import { Container, DisplayObject } from "@pixi/display"
+import { DisplayObject } from "@pixi/display"
 import type { InteractionEvent } from "@pixi/interaction"
 
 import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
@@ -34,17 +34,18 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	declare public readonly factory: LayoutFactory
 
 	public readonly handle: DisplayObject
-	private hidden: boolean
+	private _hidden: boolean
 	protected _scale: number
 	protected _anchor: [number, number]
 	protected _pivot: [number, number]
 	protected _parentScale: number
-	protected _flipped?: "vertical" | "horizontal"
+	protected _flipped: "vertical" | "horizontal" | false
 
 	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: DisplayObject) {
 		super(props)
 		this.handle = handle
-		this.hidden = false
+		this._hidden = false
+		this._flipped = false
 		this._anchor = [0, 0]
 		this._pivot = [0.5, 0.5]
 		this._parentScale = 1
@@ -135,7 +136,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public set alpha(value: number) {
-		this.hidden = value === 0
+		this._hidden = value === 0
 		this.handle.visible = this.enabled && value !== 0
 		this.handle.alpha = value
 	}
@@ -153,8 +154,10 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public set flipped(value: false | "vertical" | "horizontal") {
-		this._flipped = value || undefined
-		this.setDirty()
+		if (this._flipped != value) {
+			this._flipped = value
+			this.setDirty()
+		}
 	}
 
 	public get interactive() {
@@ -174,9 +177,11 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public set scale(value: number) {
-		this._scale = value
-		this.onScaleChange(this._parentScale)
-		this.setDirty()
+		if (this._scale != value) {
+			this._scale = value
+			this.onScaleChange(this._parentScale)
+			this.setDirty()
+		}
 	}
 
 	public get scale() {
@@ -199,14 +204,14 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 			result.left -= result.left - bounds[0]
 			result.width = bounds[1] - bounds[0]
 		} else {
-			result.width = this.width * this._scale
+			result.width = this.innerWidth * this._scale
 		}
 		if (this._height == null && this.flexMode == "none") {
 			const bounds = this.verticalBounds
 			result.top -= result.top - bounds[0]
 			result.height = bounds[1] - bounds[0]
 		} else {
-			result.height = this.height * this._scale
+			result.height = this.innerHeight * this._scale
 		}
 		let parent = this._parent
 		while (parent) {
@@ -240,6 +245,8 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 			min = Math.min(min, bounds[0])
 			max = Math.max(max, bounds[1])
 		}
+		min *= this.scale
+		max *= this.scale
 		return isFinite(min + max) ? [offset + min, offset + max] : [offset, offset]
 	}
 
@@ -259,6 +266,8 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 			min = Math.min(min, bounds[0])
 			max = Math.max(max, bounds[1])
 		}
+		min *= this.scale
+		max *= this.scale
 		return isFinite(min + max) ? [offset + min, offset + max] : [offset, offset]
 	}
 
@@ -267,15 +276,42 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public set anchor(value: Readonly<[number, number]>) {
-		this._anchor[0] = value[0]
-		this._anchor[1] = value[1]
-		this.setDirty()
+		if (this._anchor[0] != value[0] || this._anchor[1] != value[1]) {
+			this._anchor[0] = value[0]
+			this._anchor[1] = value[1]
+			this.setDirty()
+		}
+	}
+
+	public get xAnchor() {
+		return this._anchor[0]
+	}
+
+	public set xAnchor(value: number) {
+		if (this._anchor[0] != value) {
+			this._anchor[0] = value
+			this.setDirty()
+		}
+	}
+
+	public get yAnchor() {
+		return this._anchor[1]
+	}
+
+	public set yAnchor(value: number) {
+		if (this._anchor[1] != value) {
+			this._anchor[1] = value
+			this.setDirty()
+		}
 	}
 
 	public setAnchor(x: number, y?: number) {
-		this._anchor[0] = x
-		this._anchor[1] = y === undefined ? x : y
-		this.setDirty()
+		const yValue = y === undefined ? x : y
+		if (this._anchor[0] != x || this._anchor[1] != yValue) {
+			this._anchor[0] = x
+			this._anchor[1] = yValue
+			this.setDirty()
+		}
 	}
 
 	public get pivot() {
@@ -283,15 +319,42 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	public set pivot(value: Readonly<[number, number]>) {
-		this._pivot[0] = value[0]
-		this._pivot[1] = value[1]
-		this.setDirty()
+		if (this._pivot[0] != value[0] || this._pivot[1] != value[1]) {
+			this._pivot[0] = value[0]
+			this._pivot[1] = value[1]
+			this.setDirty()
+		}
+	}
+
+	public get xPivot() {
+		return this._pivot[0]
+	}
+
+	public set xPivot(value: number) {
+		if (this._pivot[0] != value) {
+			this._pivot[0] = value
+			this.setDirty()
+		}
+	}
+
+	public get yPivot() {
+		return this._pivot[1]
+	}
+
+	public set yPivot(value: number) {
+		if (this._pivot[1] != value) {
+			this._pivot[1] = value
+			this.setDirty()
+		}
 	}
 
 	public setPivot(x: number, y?: number) {
-		this._pivot[0] = x
-		this._pivot[1] = y === undefined ? x : y
-		this.setDirty()
+		const yValue = y === undefined ? x : y
+		if (this._pivot[0] != x || this._pivot[1] != yValue) {
+			this._pivot[0] = x
+			this._pivot[1] = yValue
+			this.setDirty()
+		}
 	}
 
 	public get buttonMode() {
@@ -324,11 +387,11 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	protected get computedLeft() {
-		return this._padding.left + this.innerLeft + this._scale * (this.innerWidth / 2)
+		return this.innerLeft + this._scale * this.pivot[0] * this.innerWidth
 	}
 
 	protected get computedTop() {
-		return this._padding.top + this.innerTop + this._scale * (this.innerHeight / 2)
+		return this.innerTop + this._scale * this.pivot[1] * this.innerHeight
 	}
 
 	protected onDisable() {
@@ -336,7 +399,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	}
 
 	protected onUpdate() {
-		this.handle.visible = this._enabled && !this.hidden
+		this.handle.visible = this._enabled && !this._hidden
 	}
 }
 

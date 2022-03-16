@@ -154,62 +154,65 @@ export class SdfTextElement extends BaseElement {
 		this.setDirty()
 	}
 
-	private fitWrappedText(width: number, height: number) {
+	private fitWrappedText(height: number) {
 		let upperBound = 1
-		let lowerBound = Math.min(width / this.handle.width, height / this.handle.height)
+		let lowerBound = height / this.handle.height
 		let lastSize = upperBound
 		if (lowerBound >= upperBound) {
 			return
 		}
 		for (let i = 0; i < 8; i += 1) {
 			const currentSize = (upperBound + lowerBound) / 2
-			this.handle.fontScale = currentSize
-			if (Math.abs(currentSize - lastSize) < 0.05) {
-				return
+			if (Math.abs(currentSize - lastSize) / lastSize < 0.02) {
+				break
 			}
+			this.handle.fontScale = currentSize
 			lastSize = currentSize
-			const scale = Math.min(width / this.handle.width, height / this.handle.height)
+			const scale = height / this.handle.height
 			if (scale > 1) {
 				lowerBound = currentSize
-				upperBound = currentSize * scale
-			} else {
+				upperBound = Math.min(upperBound, currentSize * scale)
+			} else if (scale < 1) {
+				lowerBound = Math.max(lowerBound, currentSize * scale)
 				upperBound = currentSize
-				lowerBound = currentSize * scale
+			} else {
+				return
 			}
 		}
+		this.handle.fontScale = lowerBound
 	}
 
 	protected onUpdate() {
 		super.onUpdate()
-		const width = this.width
-		const height = this.height
+		const width = this.innerWidth
+		const height = this.innerHeight
 		this.handle.wordWrapWidth = (this._wordWrap && this.widthReady) ? width : 0
 		this.handle.fontScale = 1
 		if (this.handle.dirty || width != this._lastSize[0] || height != this._lastSize[1]) {
 			if (this._fit) {
 				if (this._wordWrap) {
-					this.fitWrappedText(width, height)
+					this.fitWrappedText(height)
 				} else {
 					this.handle.fontScale = Math.min(1, width / this.handle.width, height / this.handle.height)
 				}
 			}
 		}
-		this._lastSize[0] = this.width
-		this._lastSize[1] = this.height
+		this._lastSize[0] = width
+		this._lastSize[1] = height
 		let left = 0
 		let top = 0
 		if (this._verticalAlign == "middle") {
-			top = (this.height - this.contentHeight) / 2
+			top = (height - this.contentHeight) / 2
 		} else if (this._verticalAlign == "baseline") {
-			top = (this.height - this.contentHeight - 2 * this.handle.baseLineOffset) / 2
+			top = (height - this.contentHeight - 2 * this.handle.baseLineOffset) / 2
 		} else if (this._verticalAlign == "bottom") {
-			top = this.height - this.contentHeight
+			top = height - this.contentHeight
 		}
 		if (this._horizontalAlign == "center") {
-			left = (this.width - this.contentWidth) / 2
+			left = (width - this.contentWidth) / 2
 		}
 		else if (this._horizontalAlign == "right") {
-			left = this.width - this.contentWidth
+			left = width - this.contentWidth
 		}
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)

@@ -11,7 +11,6 @@ export interface ContainerElementConfig<T extends BaseElement = ContainerElement
 	sorted?: boolean
 }
 
-
 export class ContainerElement extends BaseElement {
 	declare public readonly handle: Container
 
@@ -107,6 +106,8 @@ export class ContainerElement extends BaseElement {
 
 	protected onUpdate() {
 		super.onUpdate()
+		const width = this.width
+		const height = this.height
 		if (this._mask) {
 			if (this._maskObject) {
 				this.handle.mask = this._maskObject
@@ -128,13 +129,13 @@ export class ContainerElement extends BaseElement {
 			}
 		}
 		if (this.handle.interactive) {
-			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 		this.handle.position.set(
-			this.innerLeft + this._scale * (this.width / 2),
-			this.innerTop + this._scale * (this.height / 2)
+			this.innerLeft + this._scale * this.pivot[0] * width,
+			this.innerTop + this._scale * this.pivot[1] * height
 		)
-		this.handle.pivot.set(this.width * this.pivot[0], this.height * this.pivot[1])
+		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 	}
@@ -144,6 +145,6 @@ export default ContainerElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		container: {config: BaseConfig, element: ContainerElement}
+		container: {config: ContainerElementConfig, element: ContainerElement}
 	}
 }

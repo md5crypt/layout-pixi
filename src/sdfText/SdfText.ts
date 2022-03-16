@@ -267,7 +267,7 @@ export class SdfText extends DisplayObject {
 		this._baseLineOffset = lastLine.baseLine - lastLine.height / 2
 		this._lines = lines
 		this._width = this._wordWrapWidth || boxWidth
-		this._height = yOffset
+		this._height = yOffset - currentStyle.lineSpacing * currentScale
 	}
 
 	private postProcessCharData() {
