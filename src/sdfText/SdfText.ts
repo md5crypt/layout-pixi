@@ -1,9 +1,9 @@
-import { Renderer, Texture } from "@pixi/core"
+import { Renderer, Texture, BaseTexture } from "@pixi/core"
 import { DisplayObject, IDestroyOptions } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
 import { BBParser, Ascii, RichText, RichTextChar } from "./BBParser.js"
 import { SdfFontData, SdfFontCharData } from "./SdfFontData.js"
-import { SdfTextConstants, SdfTextRenderer } from "./SdfTextRenderer.js"
+import { SdfTextConstants, SdfTextRenderer, SdfTextRenderObject } from "./SdfTextRenderer.js"
 import { SdfTextStyle } from "./SdfTextStyle.js"
 
 interface InternalSdfFontCharData extends SdfFontCharData {
@@ -28,6 +28,7 @@ interface CharRenderData extends RichTextChar {
 	height: number
 	uvs: Float32Array
 	distance: number
+	textureUid: number
 }
 
 interface LineRenderData {
@@ -41,9 +42,10 @@ interface LineRenderData {
 	yOffset: number
 }
 
-export class SdfText extends DisplayObject {
+export class SdfText extends DisplayObject implements SdfTextRenderObject {
 
-	private static _fonts: Map<string, InternalSdfFontData>= new Map()
+	private static _fonts: Map<string, InternalSdfFontData> = new Map()
+	private static _fontBaseTextures: Map<number, BaseTexture> = new Map()
 	private static _linePool: LineRenderData[] = []
 
 	public static styleDefaults: SdfTextStyle = {
@@ -56,8 +58,6 @@ export class SdfText extends DisplayObject {
 		fontScale: 1
 	}
 
-	public static forceBatch = false
-
 	private static getLine() {
 		const line = this._linePool.pop() || {} as LineRenderData
 		line.height = 0
@@ -69,6 +69,9 @@ export class SdfText extends DisplayObject {
 
 	public static registerFont(data: SdfFontData, textures: Texture[], name?: string) {
 		const charMap = new Map<number, InternalSdfFontCharData>()
+		for (const texture of textures) {
+			this._fontBaseTextures.set(texture.baseTexture.uid, texture.baseTexture)
+		}
 		for (let i = 0; i < data.chars.length; i += 1) {
 			const char = data.chars[i] as InternalSdfFontCharData
 			char.kerning = null
@@ -114,6 +117,7 @@ export class SdfText extends DisplayObject {
 	private _dataDirty: boolean
 	private _vertexData: Float32Array | null
 	private _vertexDataSize: number
+	private _cachedVertexData!: Float32Array
 	private _lastTransformWorldId: number
 	private _width: number
 	private _height: number
@@ -124,7 +128,6 @@ export class SdfText extends DisplayObject {
 	public sortDirty: boolean
 	public flush: boolean
 	public forceBatch: boolean
-
 
 	constructor() {
 		super()
@@ -138,7 +141,7 @@ export class SdfText extends DisplayObject {
 		this._vertexDataSize = 0
 		this._lastTransformWorldId = -1
 		this.flush = false
-		this.forceBatch = SdfText.forceBatch
+		this.forceBatch = SdfTextRenderer.FORCE_BATCH
 		this._width = 0
 		this._height = 0
 		this._lines = null
@@ -302,6 +305,7 @@ export class SdfText extends DisplayObject {
 			}
 			const texture = char.charData.texture
 			if (texture) {
+				char.textureUid = texture.baseTexture.uid
 				char.tint = char.style.tint
 				char.distance = char.font.distanceField.distanceRange * char.scale
 				char.uvs = texture._uvs.uvsFloat32
@@ -375,35 +379,41 @@ export class SdfText extends DisplayObject {
 			const h1 = char.y
 			const h0 = h1 + char.height
 
+			const textureUid = char.textureUid
+
 			fVertexData[offset + 0] = (a * w1) + (c * h1) + tx
 			fVertexData[offset + 1] = (d * h1) + (b * w1) + ty
 			fVertexData[offset + 2] = uvs[0]
 			fVertexData[offset + 3] = uvs[1]
 			fVertexData[offset + 4] = distance
-			iVertexData[offset + 5] = color
+			fVertexData[offset + 5] = textureUid
+			iVertexData[offset + 6] = color
 
-			fVertexData[offset + 6] = (a * w0) + (c * h1) + tx
-			fVertexData[offset + 7] = (d * h1) + (b * w0) + ty
-			fVertexData[offset + 8] = uvs[2]
-			fVertexData[offset + 9] = uvs[3]
-			fVertexData[offset + 10] = distance
-			iVertexData[offset + 11] = color
+			fVertexData[offset + 7] = (a * w0) + (c * h1) + tx
+			fVertexData[offset + 8] = (d * h1) + (b * w0) + ty
+			fVertexData[offset + 9] = uvs[2]
+			fVertexData[offset + 10] = uvs[3]
+			fVertexData[offset + 11] = distance
+			fVertexData[offset + 12] = textureUid
+			iVertexData[offset + 13] = color
 
-			fVertexData[offset + 12] = (a * w0) + (c * h0) + tx
-			fVertexData[offset + 13] = (d * h0) + (b * w0) + ty
-			fVertexData[offset + 14] = uvs[4]
-			fVertexData[offset + 15] = uvs[5]
-			fVertexData[offset + 16] = distance
-			iVertexData[offset + 17] = color
+			fVertexData[offset + 14] = (a * w0) + (c * h0) + tx
+			fVertexData[offset + 15] = (d * h0) + (b * w0) + ty
+			fVertexData[offset + 16] = uvs[4]
+			fVertexData[offset + 17] = uvs[5]
+			fVertexData[offset + 18] = distance
+			fVertexData[offset + 19] = textureUid
+			iVertexData[offset + 20] = color
 
-			fVertexData[offset + 18] = (a * w1) + (c * h0) + tx
-			fVertexData[offset + 19] = (d * h0) + (b * w1) + ty
-			fVertexData[offset + 20] = uvs[6]
-			fVertexData[offset + 21] = uvs[7]
-			fVertexData[offset + 22] = distance
-			iVertexData[offset + 23] = color
+			fVertexData[offset + 21] = (a * w1) + (c * h0) + tx
+			fVertexData[offset + 22] = (d * h0) + (b * w1) + ty
+			fVertexData[offset + 23] = uvs[6]
+			fVertexData[offset + 24] = uvs[7]
+			fVertexData[offset + 25] = distance
+			fVertexData[offset + 26] = textureUid
+			iVertexData[offset + 27] = color
 
-			offset += 24
+			offset += 28
 		}
 
 		this._vertexDataSize = offset
@@ -444,7 +454,8 @@ export class SdfText extends DisplayObject {
 		const vertexDataSize = this.calculateVertices(renderer)
 		const plugin = (renderer.plugins.sdfText as SdfTextRenderer)
 		if (vertexDataSize > 0) {
-			plugin.addToBatch(this._vertexData!.subarray(0, vertexDataSize))
+			this._cachedVertexData = this._vertexData!.subarray(0, vertexDataSize)
+			plugin.addToBatch(this)
 			if (this.flush) {
 				renderer.batch.flush()
 				plugin.flush()
@@ -538,5 +549,13 @@ export class SdfText extends DisplayObject {
 
 	public get baseLineOffset() {
 		return this._baseLineOffset
+	}
+
+	public get vertexData() {
+		return this._cachedVertexData
+	}
+
+	public get textureUidMap() {
+		return SdfText._fontBaseTextures
 	}
 }

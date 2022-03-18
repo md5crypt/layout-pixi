@@ -1,14 +1,24 @@
-import { Shader, Program } from "@pixi/core"
+import { Shader, Program, UniformGroup } from "@pixi/core"
 
-const shaderFrag = `
+const shaderFrag = (maxTextures: number) => `
+#define numTextures ${maxTextures}
+
 varying vec2 vTextureCoord;
-varying float vFWidth;
 varying vec4 vColor;
+varying float vFWidth;
+varying float vTextureId;
 
-uniform sampler2D uSampler;
+uniform sampler2D uSamplers[numTextures];
 
 void main(void) {
-	vec4 texColor = texture2D(uSampler, vTextureCoord);
+	vec4 texColor = vec4(0);
+	int textureId = int(vTextureId);
+	for (int i = 0; i < numTextures; i += 1) {
+		if (i == textureId) {
+			texColor = texture2D(uSamplers[i], vTextureCoord);
+			break;
+		}
+	}
 	float median = (
 		texColor.r + texColor.g + texColor.b -
 		min(texColor.r, min(texColor.g, texColor.b)) -
@@ -26,11 +36,13 @@ attribute vec2 aVertexPosition;
 attribute vec2 aTextureCoord;
 attribute vec4 aColor;
 attribute float aFWidth;
+attribute float aTextureId;
 
 uniform mat3 projectionMatrix;
 
 varying vec2 vTextureCoord;
 varying float vFWidth;
+varying float vTextureId;
 varying vec4 vColor;
 
 void main(void) {
@@ -38,11 +50,14 @@ void main(void) {
 	vTextureCoord = aTextureCoord;
 	vColor = aColor;
 	vFWidth = aFWidth;
+	vTextureId = aTextureId;
 }`
 
 
 export default class SdfTextShader extends Shader {
-	constructor() {
-		super(new Program(shaderVert, shaderFrag))
+	constructor(maxTextures: number) {
+		super(new Program(shaderVert, shaderFrag(maxTextures)), {
+			default: UniformGroup.from({ uSamplers: Array.from({length: maxTextures}, (_, i) => i) }, true)
+		})
 	}
 }
