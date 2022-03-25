@@ -1,4 +1,4 @@
-import { Renderer, ObjectRenderer, Buffer, BaseTexture, Texture, Geometry, State } from "@pixi/core"
+import { Renderer, ObjectRenderer, Buffer, BaseTexture, Geometry, State } from "@pixi/core"
 import { TYPES, DRAW_MODES, BLEND_MODES } from "@pixi/constants"
 import { createIndicesForQuads } from "@pixi/utils"
 

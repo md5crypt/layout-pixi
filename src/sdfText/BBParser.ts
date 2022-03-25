@@ -111,6 +111,11 @@ export class BBParser {
 						break
 					case "size":
 						if (value) {
+							currentStyle.fontSize = parseFloat(value)
+						}
+						break
+					case "scale":
+						if (value) {
 							currentStyle.fontScale = parseFloat(value)
 						}
 						break

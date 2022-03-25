@@ -160,9 +160,9 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 		this._textParsed.defaults = this._style
 
 		let currentStyle = chars[0].style
-		let currentFont = SdfText._fonts.get(currentStyle.fontName)
+		let currentFont = SdfText._fonts.get(currentStyle.fontName) || SdfText._fonts.get("default")
 		if (!currentFont) {
-			throw new Error("font not found: " + currentStyle.fontName)
+			throw new Error(`font "${currentStyle.fontName}" not found and no default font loaded`)
 		}
 		let currentScale = ((currentStyle.fontSize) / currentFont.info.size) * currentStyle.fontScale * this._fontScale
 
