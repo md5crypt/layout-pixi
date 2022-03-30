@@ -67,6 +67,18 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 		return line
 	}
 
+	public static isFontRegistered(name: string) {
+		return this._fonts.has(name)
+	}
+
+	public static registerFontAlias(aliasName: string, target: string) {
+		const font = this._fonts.get(target)
+		if (!font) {
+			throw new Error("font does not exist")
+		}
+		this._fonts.set(aliasName, font)
+	}
+
 	public static registerFont(data: SdfFontData, textures: Texture[], name?: string) {
 		const charMap = new Map<number, InternalSdfFontCharData>()
 		for (const texture of textures) {
