@@ -1,6 +1,6 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "1.1.7",
+	"version": "1.1.8",
 	"description": "pixi support for @md5crypt/layout",
 	"main": "lib/index.js",
 	"types": "lib",
