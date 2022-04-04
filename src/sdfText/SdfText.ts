@@ -40,6 +40,7 @@ interface LineRenderData {
 	alignOffset: number
 	justifySpacer: number
 	yOffset: number
+	wrapped: boolean
 }
 
 export class SdfText extends DisplayObject implements SdfTextRenderObject {
@@ -64,6 +65,7 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 		line.width = 0
 		line.baseLine = 0
 		line.spaces = 0
+		line.wrapped = false
 		return line
 	}
 
@@ -262,6 +264,7 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 				currentLine.spaces -= 1
 				currentLine.align = currentStyle.align
 				currentLine.yOffset = yOffset
+				currentLine.wrapped = true
 				xOffset = 0
 				yOffset += currentLine.height + currentStyle.lineSpacing * currentScale
 				boxWidth = Math.max(currentLine.width, boxWidth)
@@ -295,7 +298,7 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 				line.alignOffset = this._width - line.width
 			} else if (line.align == "center") {
 				line.alignOffset = (this._width - line.width) / 2
-			} else if (line.align == "justify" && i < lines.length - 1 && lines[i + 1].width) {
+			} else if (line.align == "justify" && line.wrapped) {
 				line.justifySpacer = line.spaces <= 0 ? 0 : (this._width - line.width) / line.spaces
 			}
 		}

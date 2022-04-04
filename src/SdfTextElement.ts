@@ -64,10 +64,20 @@ export class SdfTextElement extends BaseElement {
 	}
 
 	public get contentHeight() {
+		if (this._wordWrap && this.widthReady) {
+			this.handle.wordWrapWidth = this.innerWidth
+		} else {
+			this.handle.wordWrapWidth = 0
+		}
 		return this.handle.height
 	}
 
 	public get contentWidth() {
+		if (this._wordWrap && this.widthReady) {
+			this.handle.wordWrapWidth = this.innerWidth
+		} else {
+			this.handle.wordWrapWidth = 0
+		}
 		return this.handle.width
 	}
 
@@ -112,6 +122,8 @@ export class SdfTextElement extends BaseElement {
 
 	public set wordWrap(value: boolean) {
 		if (this._wordWrap != value) {
+			this._lastSize[0] = -1
+			this._lastSize[1] = -1
 			this._wordWrap = value
 			this.setDirty()
 		}
@@ -186,7 +198,7 @@ export class SdfTextElement extends BaseElement {
 		super.onUpdate()
 		const width = this.innerWidth
 		const height = this.innerHeight
-		this.handle.wordWrapWidth = (this._wordWrap && this.widthReady) ? width : 0
+		this.handle.wordWrapWidth = this._wordWrap ? width : 0
 		this.handle.fontScale = 1
 		if (this.handle.dirty || width != this._lastSize[0] || height != this._lastSize[1]) {
 			if (this._fit) {
