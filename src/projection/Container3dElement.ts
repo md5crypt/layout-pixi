@@ -1,10 +1,10 @@
-import { ContainerElement } from "../ContainerElement.js"
-import { BaseConstructorProperties, BaseConfig } from "../BaseElement.js"
+import { ContainerElement, ContainerElementConfig } from "../ContainerElement.js"
+import { BaseConstructorProperties } from "../BaseElement.js"
 import type LayoutFactory from "../LayoutFactory.js"
 
 import { Container3d } from "pixi-projection"
 
-export interface Container3dElementConfig extends BaseConfig<Container3dElement> {
+export interface Container3dElementConfig extends ContainerElementConfig<Container3dElement> {
 	euler?: {x?: number, y?: number, z?: number}
 	position3d?: {x?: number, y?: number, z?: number}
 	scale3d?: {x?: number, y?: number, z?: number}

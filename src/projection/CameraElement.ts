@@ -1,5 +1,5 @@
-import { ContainerElement } from "../ContainerElement.js"
-import { BaseConstructorProperties, BaseConfig } from "../BaseElement.js"
+import { ContainerElement, ContainerElementConfig } from "../ContainerElement.js"
+import { BaseConstructorProperties } from "../BaseElement.js"
 
 import type LayoutFactory from "../LayoutFactory.js"
 
@@ -12,7 +12,7 @@ interface PlaneConfig {
 	orthographic: boolean
 }
 
-export interface CameraElementConfig extends BaseConfig<CameraElement>, Partial<PlaneConfig> {
+export interface CameraElementConfig extends ContainerElementConfig<CameraElement>, Partial<PlaneConfig> {
 	position3d?: {x?: number, y?: number, z?: number}
 }
 
