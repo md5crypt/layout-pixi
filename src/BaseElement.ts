@@ -4,6 +4,13 @@ import type { InteractionEvent } from "@pixi/interaction"
 
 import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
 
+export const enum BlendMode {
+	NORMAL = 0,
+	ADD = 1,
+	MULTIPLY = 2,
+	SCREEN = 3
+}
+
 export type EventTypeName = (
 	"click" | "mousedown" | "mousemove" | "mouseout" | "mouseover" | "mouseup" |
 	"mouseupoutside" | "pointercancel" | "pointerdown" | "pointermove" | "pointerout" |

@@ -1,5 +1,5 @@
 import { ContainerElement } from "../ContainerElement.js"
-import { BaseConstructorProperties, BaseConfig } from "../BaseElement.js"
+import { BaseConstructorProperties, BaseConfig, BlendMode } from "../BaseElement.js"
 import type LayoutFactory from "../LayoutFactory.js"
 
 import { ParticleContainer } from "@pixi/particle-container"
@@ -13,6 +13,7 @@ export interface ParticleContainerElementConfig extends BaseConfig<ParticleConta
 	withRotation?: boolean
 	withUVS?: boolean
 	withTint?: boolean
+	blendMode?: BlendMode
 }
 
 export class ParticleContainerElement extends ContainerElement {
@@ -36,8 +37,22 @@ export class ParticleContainerElement extends ContainerElement {
 		})
 	}
 
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
+	}
+
 	constructor(props: BaseConstructorProperties<ParticleContainerElementConfig>, handle: ParticleContainer) {
 		super(props, handle)
+		const config = props.config
+		if (config) {
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
+			}
+		}
 	}
 }
 

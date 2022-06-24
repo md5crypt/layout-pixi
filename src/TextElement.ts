@@ -1,4 +1,4 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
 import LayoutFactory from "./LayoutFactory.js"
 import { Text, TextStyle, TextMetrics, ITextStyle } from "@pixi/text"
 
@@ -9,6 +9,7 @@ export interface TextElementConfig<T extends TextElement = TextElement> extends 
 	style?: Partial<ITextStyle>
 	resolution?: number
 	roundPixels?: boolean
+	blendMode?: BlendMode
 }
 
 export class TextElement extends BaseElement {
@@ -56,6 +57,9 @@ export class TextElement extends BaseElement {
 			}
 			if (config.resolution) {
 				this._resolution = config.resolution
+			}
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
 			}
 		}
 	}
@@ -182,6 +186,14 @@ export class TextElement extends BaseElement {
 		}
 		this.textRect = null
 		this.setDirty()
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	private updateFontSize(value: number) {

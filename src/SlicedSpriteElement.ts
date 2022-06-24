@@ -1,4 +1,4 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
 import { LayoutFactory } from "./LayoutFactory.js"
 import { PositioningBox } from "@md5crypt/layout"
 import { Texture } from "@pixi/core"
@@ -88,6 +88,7 @@ export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = Slice
 	scaling?: "width" | "height" | "none"
 	buttonMode?: boolean
 	roundPixels?: boolean
+	blendMode?: BlendMode
 }
 
 export class SlicedSpriteElement extends BaseElement {
@@ -121,6 +122,9 @@ export class SlicedSpriteElement extends BaseElement {
 			}
 			if (config.roundPixels !== undefined) {
 				this.handle.roundPixels = config.roundPixels
+			}
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
 			}
 		}
 	}
@@ -167,6 +171,14 @@ export class SlicedSpriteElement extends BaseElement {
 
 	public set tint(value: number) {
 		this.handle.tint = value
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	public get roundPixels() {

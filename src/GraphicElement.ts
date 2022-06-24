@@ -1,10 +1,11 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
 import LayoutFactory from "./LayoutFactory.js"
 import { Graphics } from "@pixi/graphics"
 import { Rectangle } from "@pixi/math"
 
 export interface GraphicElementConfig<T extends BaseElement = GraphicElement> extends BaseConfig<T> {
 	onDraw?: (self: GraphicElement) => void
+	blendMode?: BlendMode
 }
 
 export class GraphicElement extends BaseElement {
@@ -21,6 +22,9 @@ export class GraphicElement extends BaseElement {
 		const config = props.config
 		if (config) {
 			this._onDraw = config.onDraw
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
+			}
 		}
 	}
 
@@ -31,6 +35,14 @@ export class GraphicElement extends BaseElement {
 	public set onDraw(value: ((self: GraphicElement) => void) | undefined) {
 		this._onDraw = value
 		this.setDirty()
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	protected onUpdate() {

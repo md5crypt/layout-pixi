@@ -1,4 +1,4 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
 import LayoutFactory from "./LayoutFactory.js"
 
 import { Texture } from "@pixi/core"
@@ -10,6 +10,7 @@ export interface TiledSpriteElementConfig<T extends TiledSpriteElement = TiledSp
 	scaling?: "width" | "height" | "none"
 	clampMargin?: number
 	roundPixels?: boolean
+	blendMode?: BlendMode
 }
 
 export class TiledSpriteElement extends BaseElement {
@@ -38,6 +39,9 @@ export class TiledSpriteElement extends BaseElement {
 			if (config.roundPixels !== undefined) {
 				this.handle.roundPixels = config.roundPixels
 			}
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
+			}
 		}
 	}
 
@@ -59,6 +63,14 @@ export class TiledSpriteElement extends BaseElement {
 
 	public set tint(value: number) {
 		this.handle.tint = value
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	public get roundPixels() {

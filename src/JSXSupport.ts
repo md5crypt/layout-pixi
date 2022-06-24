@@ -6,17 +6,15 @@ type LayoutElementProps = {
 	[K in keyof ElementTypes]: ElementTypes[K]["config"] & {children?: ReactNode}
 }
 
-declare global {
-	namespace JSX {
-		interface IntrinsicElements extends LayoutElementProps {}
-		interface ElementChildrenAttribute {
-			children: {}
-		}
-		interface Element {
-			type: keyof ElementTypes
-			config?: BaseConfig
-			children?: Element[]
-		}
+export namespace JSX {
+	export interface IntrinsicElements extends LayoutElementProps {}
+	export interface ElementChildrenAttribute {
+		children: {}
+	}
+	export interface Element {
+		type: keyof ElementTypes
+		config?: BaseConfig
+		children?: Element[]
 	}
 }
 
