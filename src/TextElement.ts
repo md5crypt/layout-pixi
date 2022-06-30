@@ -218,6 +218,9 @@ export class TextElement extends BaseElement {
 		if (this._style.dropShadowBlur) {
 			this.handle.style.dropShadowBlur = this._style.dropShadowBlur * scale
 		}
+		if (this._style.padding) {
+			this.handle.style.padding = this._style.padding * scale
+		}
 	}
 
 	private fitText(width: number, height: number) {

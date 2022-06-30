@@ -1,4 +1,4 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
 import { LayoutFactory } from "./LayoutFactory.js"
 
 import { Texture } from "@pixi/core"
@@ -14,6 +14,7 @@ export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> ex
 	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
 	roundPixels?: boolean
+	blendMode?: BlendMode
 }
 
 export class SpriteElement extends BaseElement {
@@ -49,6 +50,9 @@ export class SpriteElement extends BaseElement {
 			}
 			if (config.roundPixels !== undefined) {
 				this.handle.roundPixels = config.roundPixels
+			}
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
 			}
 		}
 	}
@@ -107,6 +111,14 @@ export class SpriteElement extends BaseElement {
 	public set horizontalAlign(value: "left" | "center" | "right") {
 		this._horizontalAlign = value
 		this.setDirty()
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	public setTextureScale(value: number) {
