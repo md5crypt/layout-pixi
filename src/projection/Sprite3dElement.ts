@@ -11,7 +11,7 @@ export interface Sprite3dElementConfig extends SpriteElementConfig<Sprite3dEleme
 	scale3d?: {x?: number, y?: number, z?: number}
 }
 
-export class Sprite3dElement extends SpriteElement {
+export class Sprite3dElement extends SpriteElement<Sprite3dElement> {
 	declare public handle: Sprite3d
 
 	public static register(layoutFactory: LayoutFactory) {

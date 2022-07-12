@@ -52,20 +52,17 @@ export function createElement<T extends IntrinsicElementNames | ComponentFunctio
 	const slots = {} as Slots
 	for (let i = 0; i < rawChildren.length; i += 1) {
 		const value = rawChildren[i]
-		if (value) {
-			if (Array.isArray(value)) {
-				for (let j = 0; j < value.length; j += 1) {
-					const item = value[j]
-					if (item) {
-						children.push(item as JSX.Element)
-					}
-				}
-			} else if ((value.type as string) == "jsx-fragment") {
-				children.push(...value.children!)
-			} else if ((value.type as string) == "jsx-slot") {
-				slots[value.config!.name!] = value.children
+		const array = Array.isArray(value) ? value : [value]
+		for (let j = 0; j < array.length; j += 1) {
+			const item = array[j] as JSX.Element
+			if (!item) {
+				continue
+			} else if ((item.type as string) == "jsx-fragment") {
+				children.push(...item.children!)
+			} else if ((item.type as string) == "jsx-slot") {
+				slots[item.config!.name!] = item.children
 			} else {
-				children.push(value)
+				children.push(item)
 			}
 		}
 	}

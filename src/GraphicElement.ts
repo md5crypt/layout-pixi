@@ -8,7 +8,7 @@ export interface GraphicElementConfig<T extends BaseElement = GraphicElement> ex
 	blendMode?: BlendMode
 }
 
-export class GraphicElement extends BaseElement {
+export class GraphicElement extends BaseElement<GraphicElement> {
 	declare public readonly handle: Graphics
 
 	private _onDraw?: (self: GraphicElement) => void

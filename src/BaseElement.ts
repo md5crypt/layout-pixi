@@ -19,7 +19,7 @@ export type EventTypeName = (
 	"touchendoutside" | "touchmove" | "touchstart"
 )
 
-export interface BaseConfig<T extends BaseElement = BaseElement> extends LayoutElementConfig<T> {
+export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends LayoutElementConfig<T> {
 	scale?: number
 	zIndex?: number
 	alpha?: number
@@ -36,8 +36,7 @@ export interface BaseConstructorProperties<T> extends LayoutElementConstructorPr
 	factory: LayoutFactory
 }
 
-export abstract class BaseElement extends LayoutElement<BaseElement, LayoutElementJson> {
-	declare public readonly children: BaseElement[]
+export abstract class BaseElement<T extends BaseElement = any> extends LayoutElement<LayoutElementJson, BaseElement, T> {
 	declare public readonly factory: LayoutFactory
 
 	public readonly handle: DisplayObject
@@ -48,7 +47,7 @@ export abstract class BaseElement extends LayoutElement<BaseElement, LayoutEleme
 	protected _parentScale: number
 	protected _flipped: "vertical" | "horizontal" | false
 
-	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: DisplayObject) {
+	protected constructor(props: BaseConstructorProperties<BaseConfig<T>>, handle: DisplayObject) {
 		super(props)
 		this.handle = handle
 		this._hidden = false

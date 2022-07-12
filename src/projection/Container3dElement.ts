@@ -10,7 +10,7 @@ export interface Container3dElementConfig extends ContainerElementConfig<Contain
 	scale3d?: {x?: number, y?: number, z?: number}
 }
 
-export class Container3dElement extends ContainerElement {
+export class Container3dElement extends ContainerElement<Container3dElement> {
 	declare public handle: Container3d
 
 

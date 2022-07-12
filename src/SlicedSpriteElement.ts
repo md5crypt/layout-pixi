@@ -91,7 +91,7 @@ export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = Slice
 	blendMode?: BlendMode
 }
 
-export class SlicedSpriteElement extends BaseElement {
+export class SlicedSpriteElement extends BaseElement<SlicedSpriteElement> {
 	declare public readonly handle: NineSlicePlane
 
 	private _scaling: "width" | "height" | "none"

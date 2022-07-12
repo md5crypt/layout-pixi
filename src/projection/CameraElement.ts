@@ -16,7 +16,7 @@ export interface CameraElementConfig extends ContainerElementConfig<CameraElemen
 	position3d?: {x?: number, y?: number, z?: number}
 }
 
-export class CameraElement extends ContainerElement {
+export class CameraElement extends ContainerElement<CameraElement> {
 	declare public handle: Camera3d
 	private planeConfig: PlaneConfig
 

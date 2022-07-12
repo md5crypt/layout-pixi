@@ -17,7 +17,7 @@ export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> ex
 	blendMode?: BlendMode
 }
 
-export class SpriteElement extends BaseElement {
+export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T> {
 	declare public readonly handle: Sprite
 	private _scaling: ScalingType
 	private texture: Texture

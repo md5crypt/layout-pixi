@@ -8,7 +8,7 @@ import { Sprite2d } from "pixi-projection"
 export interface Sprite2dElementConfig extends SpriteElementConfig<Sprite2dElement> {
 }
 
-export class Sprite2dElement extends SpriteElement {
+export class Sprite2dElement extends SpriteElement<Sprite2dElement>{
 	declare public handle: Sprite2d
 
 	public static register(layoutFactory: LayoutFactory) {

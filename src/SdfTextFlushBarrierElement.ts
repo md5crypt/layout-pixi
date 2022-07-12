@@ -2,7 +2,7 @@ import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElemen
 import LayoutFactory from "./LayoutFactory.js"
 import { SdfTextFlushBarrier } from "./sdfText/index.js"
 
-export class SdfTextFlushBarrierElement extends BaseElement {
+export class SdfTextFlushBarrierElement extends BaseElement<SdfTextFlushBarrierElement> {
 	declare public readonly handle: SdfTextFlushBarrier
 
 	public static register(layoutFactory: LayoutFactory) {

@@ -16,7 +16,7 @@ export interface ParticleContainerElementConfig extends BaseConfig<ParticleConta
 	blendMode?: BlendMode
 }
 
-export class ParticleContainerElement extends ContainerElement {
+export class ParticleContainerElement extends ContainerElement<ParticleContainerElement> {
 	declare public handle: ParticleContainer
 
 	public static register(layoutFactory: LayoutFactory) {

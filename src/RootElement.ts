@@ -2,7 +2,7 @@ import { BaseElement, BaseConfig } from "./BaseElement.js"
 import LayoutFactory from "./LayoutFactory.js"
 import { Container } from "@pixi/display"
 
-export class RootElement extends BaseElement {
+export class RootElement extends BaseElement<RootElement> {
 	declare public readonly handle: Container
 
 	public constructor(factory: LayoutFactory, config?: BaseConfig) {

@@ -14,7 +14,7 @@ export interface SdfTextElementConfig<T extends SdfTextElement = SdfTextElement>
 	style?: Partial<SdfTextStyle>
 }
 
-export class SdfTextElement extends BaseElement {
+export class SdfTextElement extends BaseElement<SdfTextElement> {
 	declare public readonly handle: SdfText
 
 	private _fit: boolean

@@ -11,7 +11,7 @@ export interface BitmapTextElementConfig<T extends BitmapTextElement = BitmapTex
 	style?: Partial<IBitmapTextStyle & {wordWrap: boolean}>
 }
 
-export class BitmapTextElement extends BaseElement {
+export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 	declare public readonly handle: BitmapText
 
 	private style: Partial<IBitmapTextStyle & {wordWrap: boolean}>

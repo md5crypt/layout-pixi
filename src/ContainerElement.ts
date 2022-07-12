@@ -11,7 +11,7 @@ export interface ContainerElementConfig<T extends BaseElement = ContainerElement
 	sorted?: boolean
 }
 
-export class ContainerElement extends BaseElement {
+export class ContainerElement<T extends ContainerElement = any> extends BaseElement<T> {
 	declare public readonly handle: Container
 
 	private _mask: boolean

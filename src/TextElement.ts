@@ -12,7 +12,7 @@ export interface TextElementConfig<T extends TextElement = TextElement> extends 
 	blendMode?: BlendMode
 }
 
-export class TextElement extends BaseElement {
+export class TextElement extends BaseElement<TextElement> {
 	declare public readonly handle: Text
 
 	private _style: Partial<ITextStyle>
@@ -80,7 +80,7 @@ export class TextElement extends BaseElement {
 	}
 
 	private meausreText() {
-		if (!this._text) {
+		if (!this._text || this.style.fontSize == 0) {
 			this.textRect = [0, 0]
 		} else {
 			if (this._style.wordWrap && this.widthReady) {
@@ -259,6 +259,11 @@ export class TextElement extends BaseElement {
 	}
 
 	protected redraw() {
+		if (this.style.fontSize == 0 || !this.text) {
+			this.needsRedraw = false
+			this.textRect = [0, 0]
+			return
+		}
 		const skipRedraw = (
 			this.textRect && (
 				!this.needsRedraw || !(
@@ -290,6 +295,10 @@ export class TextElement extends BaseElement {
 	}
 
 	protected onUpdate() {
+		if (this.style.fontSize == 0 || !this.text) {
+			this.handle.visible = false
+			return
+		}
 		super.onUpdate()
 		if (this.needsRedraw) {
 			this.redraw()

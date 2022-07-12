@@ -13,7 +13,7 @@ export interface TiledSpriteElementConfig<T extends TiledSpriteElement = TiledSp
 	blendMode?: BlendMode
 }
 
-export class TiledSpriteElement extends BaseElement {
+export class TiledSpriteElement extends BaseElement<TiledSpriteElement> {
 	declare public readonly handle: TilingSprite
 
 	private _scaling: "width" | "height" | "none"
