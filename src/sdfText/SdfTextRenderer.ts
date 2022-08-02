@@ -1,4 +1,5 @@
 import { Renderer, ObjectRenderer, Buffer, BaseTexture, Geometry, State } from "@pixi/core"
+import { ExtensionMetadata, ExtensionType } from "@pixi/extensions"
 import { TYPES, DRAW_MODES, BLEND_MODES } from "@pixi/constants"
 import { createIndicesForQuads } from "@pixi/utils"
 
@@ -38,6 +39,14 @@ class SdfTextGeometry extends Geometry {
 }
 
 export class SdfTextRenderer extends ObjectRenderer {
+	public static MAX_TEXTURES = 32
+	public static FORCE_BATCH = false
+
+	public static readonly extension: ExtensionMetadata = {
+		name: "sdfText",
+		type: ExtensionType.RendererPlugin
+	}
+
 	private _shader!: SdfTextShader
 	private _geometry: SdfTextGeometry
 
@@ -53,9 +62,6 @@ export class SdfTextRenderer extends ObjectRenderer {
 	private _inputOffset: number
 
 	private _state: State
-
-	public static MAX_TEXTURES = 32
-	public static FORCE_BATCH = false
 
 	constructor(renderer: Renderer) {
 		super(renderer)
@@ -73,12 +79,14 @@ export class SdfTextRenderer extends ObjectRenderer {
 	}
 
 	public contextChange() {
-		const gl = this.renderer.gl
-		this._maxTextures = Math.min(
-			gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
-			SdfTextRenderer.MAX_TEXTURES
-		)
-		this._shader = new SdfTextShader(this._maxTextures)
+		if (!this._shader) {
+			const gl = this.renderer.gl
+			this._maxTextures = Math.min(
+				gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS),
+				SdfTextRenderer.MAX_TEXTURES
+			)
+			this._shader = new SdfTextShader(this._maxTextures)
+		}
 	}
 
 	public addToBatch(renderObject: SdfTextRenderObject) {
