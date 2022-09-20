@@ -32,7 +32,7 @@ export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends Layo
 	buttonMode?: boolean
 }
 
-export interface BaseConstructorProperties<T> extends LayoutElementConstructorProperties<T> {
+export interface BaseConstructorProperties<T extends LayoutElementConfig> extends LayoutElementConstructorProperties<T> {
 	factory: LayoutFactory
 }
 
