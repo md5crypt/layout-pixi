@@ -5,7 +5,7 @@ import { Texture } from "@pixi/core"
 import { Rectangle, groupD8 } from "@pixi/math"
 import { Sprite } from "@pixi/sprite"
 
-type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover"
+type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover" | "cover-vertical" | "cover-horizontal"
 
 export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
@@ -182,12 +182,19 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				scale[1] = innerHeight / this.texture.height
 				break
 			case "contain":
-			case "cover": {
+			case "cover":
+			case "cover-vertical":
+			case "cover-horizontal": {
 				const elementRatio = innerWidth / innerHeight
 				const textureWidth = this.texture.width
 				const textureHeight = this.texture.height
 				const textureRatio = textureWidth / textureHeight
-				if (this._scaling == "contain") {
+				const contain = (
+					this._scaling == "contain" ||
+					(this._scaling == "cover-horizontal" && elementRatio < textureRatio) ||
+					(this._scaling == "cover-vertical" && elementRatio > textureRatio)
+				)
+				if (contain) {
 					if (elementRatio < textureRatio) {
 						const height = innerWidth / textureRatio
 						scale[0] = height / textureHeight

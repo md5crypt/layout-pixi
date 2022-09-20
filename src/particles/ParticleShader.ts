@@ -29,7 +29,7 @@ void main(void) {
 	vColor = aColor;
 }`
 
-export default class SdfTextShader extends Shader {
+export default class ParticleShader extends Shader {
 	constructor() {
 		super(new Program(shaderVert, shaderFrag))
 	}
