@@ -12,7 +12,10 @@ export class Particle {
 	public y = 0
 	public angle = 0
 	public tint = 0xFFFFFF
-	public scale = 1
+	public xScale = 1
+	public yScale = 1
+	public xAnchor = 0.5
+	public yAnchor = 0.5
 	public alpha = 1
 	public data = {} as Record<string, any>
 
@@ -20,5 +23,14 @@ export class Particle {
 		this._uvs = texture._uvs.uvsFloat32
 		this._width = texture.width
 		this._height = texture.height
+	}
+
+	public set scale(value: number) {
+		this.xScale = value
+		this.yScale = value
+	}
+
+	public get scale() {
+		return this.xScale
 	}
 }

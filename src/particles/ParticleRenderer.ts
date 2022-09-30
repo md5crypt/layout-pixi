@@ -120,17 +120,19 @@ export class ParticleRenderer extends ObjectRenderer {
 				const cos = Math.cos(item.angle)
 				const sin = Math.sin(item.angle)
 
-				const scale = item.scale
-				const a = cos * scale
-				const b = sin * scale
-				const c = -sin * scale
-				const d = cos * scale
+				const a = cos * item.xScale
+				const b = sin * item.xScale
+				const c = -sin * item.yScale
+				const d = cos * item.yScale
 
 				const width = item._width
 				const height = item._height
 
-				const tx = item.x + ((width / -2) * a) + ((height / -2) * c)
-				const ty = item.y + ((width / -2) * b) + ((height / -2) * d)
+				const xOffset = width * item.xAnchor
+				const yOffset = height * item.yAnchor
+
+				const tx = item.x - xOffset * a - yOffset * c
+				const ty = item.y - xOffset * b - yOffset * d
 
 				const uvs = item._uvs!
 				const color = item.tint | (255 * worldAlpha * item.alpha) << 24

@@ -24,7 +24,7 @@ export class ParticleEmitter {
 		this._initBehaviorList = []
 		this._updateBehaviorList = []
 		this._reminder = 0
-		this._emitTimer = Infinity
+		this._emitTimer = 0
 		this.waveSize = Infinity
 		this.emitDuration = -1
 		this.frequency = 0
