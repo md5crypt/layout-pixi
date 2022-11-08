@@ -278,10 +278,6 @@ export class TextElement extends BaseElement<TextElement> {
 		this.needsRedraw = false
 		this.handle.text = this._text
 		this.handle.style = this._style
-		if (this._style.dropShadowDistance) {
-			// multiply dropShadowDistance by resolution to fix a bug in PIXI code
-			this.handle.style.dropShadowDistance = this._style.dropShadowDistance * (this._resolution * this._parentScale)
-		}
 		this.meausreText()
 		if (this._fit) {
 			const width = this.widthReady ? this.width : Infinity
