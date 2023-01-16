@@ -236,9 +236,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	public get horizontalBounds() {
-		if (!this.widthReady) {
-			return [0, 0]
-		}
 		const width = this.width * this.scale
 		const offset = this.innerLeft
 		if (width || this._width === 0) {
@@ -257,9 +254,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	public get verticalBounds() {
-		if (!this.heightReady) {
-			return [0, 0]
-		}
 		const height = this.height * this.scale
 		const offset = this.innerTop
 		if (height || this._height === 0) {
