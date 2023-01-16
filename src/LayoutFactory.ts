@@ -16,13 +16,13 @@ type Typify<T> = {[K in keyof T]: T[K]}
 export type LayoutElementJson = BaseLayoutElementJson<Typify<ElementTypes>>
 
 export class LayoutFactory extends BaseLayoutFactory<BaseElement, LayoutElementJson> {
-	private defaults?: LayoutElementConfig<any>
-	private defaultsMap: Map<string, LayoutElementConfig<any>> = new Map()
+	private defaults?: LayoutElementConfig
+	private defaultsMap: Map<string, LayoutElementConfig> = new Map()
 
 	public setDefaults(defaults: LayoutElementConfig<BaseElement>): void
 	public setDefaults<T extends keyof ElementTypes>(type: T, defaults: ElementTypes[T]["config"]): void
-	public setDefaults(arg0: string | LayoutElementConfig<any>, arg1?: LayoutElementConfig<any>) {
-		let defaults: LayoutElementConfig<any>
+	public setDefaults(arg0: string | LayoutElementConfig, arg1?: LayoutElementConfig) {
+		let defaults: LayoutElementConfig
 		if (typeof arg0 == "string") {
 			let object = this.defaultsMap.get(arg0)
 			if (!object) {
