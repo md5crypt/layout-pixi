@@ -6,12 +6,14 @@ import { Rectangle } from "@pixi/math"
 export interface GraphicElementConfig<T extends BaseElement = GraphicElement> extends BaseConfig<T> {
 	onDraw?: (self: GraphicElement) => void
 	blendMode?: BlendMode
+	autoClear?: boolean
 }
 
 export class GraphicElement extends BaseElement<GraphicElement> {
 	declare public readonly handle: Graphics
 
 	private _onDraw?: (self: GraphicElement) => void
+	public autoClear: boolean
 
 	public static register(layoutFactory: LayoutFactory) {
 		layoutFactory.register("graphic", props => new this(props, new Graphics()))
@@ -19,11 +21,15 @@ export class GraphicElement extends BaseElement<GraphicElement> {
 
 	protected constructor(props: BaseConstructorProperties<GraphicElementConfig<any>>, handle: Graphics) {
 		super(props, handle)
+		this.autoClear = true
 		const config = props.config
 		if (config) {
 			this._onDraw = config.onDraw
 			if (config.blendMode !== undefined) {
 				this.handle.blendMode = config.blendMode as number
+			}
+			if (config.autoClear !== undefined) {
+				this.autoClear = config.autoClear
 			}
 		}
 	}
@@ -51,10 +57,12 @@ export class GraphicElement extends BaseElement<GraphicElement> {
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.width * this.pivot[0], this.height * this.pivot[1])
+		this.handle.pivot.set(this.width * this._xPivot, this.height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
-		this.handle.clear()
+		if (this.autoClear) {
+			this.handle.clear()
+		}
 		if (this._onDraw) {
 			this._onDraw(this)
 		}

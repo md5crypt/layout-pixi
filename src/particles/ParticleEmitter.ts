@@ -10,11 +10,16 @@ export class ParticleEmitter {
 	private _container: ParticleContainer
 	private _reminder: number
 	private _emitTimer: number
+	private _waveCounter: number
 
 	public waveSize: number
-	public emitDuration: number
+	public waveCount: number
 
+	public emitDuration: number
 	public frequency: number
+
+	public onEmitterStart?: () => void
+	public onEmitterStop?: () => void
 
 	public constructor(container: ParticleContainer, poolSize: number) {
 		this._container = container
@@ -25,7 +30,9 @@ export class ParticleEmitter {
 		this._updateBehaviorList = []
 		this._reminder = 0
 		this._emitTimer = 0
+		this._waveCounter = 0
 		this.waveSize = Infinity
+		this.waveCount = 0
 		this.emitDuration = -1
 		this.frequency = 0
 	}
@@ -34,17 +41,28 @@ export class ParticleEmitter {
 		behaviors.forEach(x => this.addBehavior(x))
 	}
 
-	public addBehavior(behavior: ParticleEmitterBehavior) {
+	public addBehavior<T extends ParticleEmitterBehavior>(behavior: T): T
+	public addBehavior<T extends ParticleEmitterBehavior>(behavior: T, order: number): T
+	public addBehavior<T extends ParticleEmitterBehavior>(behavior: T, executionOrder: number, initOder: number): T
+	public addBehavior<T extends ParticleEmitterBehavior>(behavior: T, executionOrder?: number, initOrder?: number) {
 		behavior.emitter = this
+		if (executionOrder !== undefined) {
+			behavior._order = executionOrder
+			behavior._initOrder = initOrder !== undefined ? initOrder : behavior.initOrder
+		} else {
+			behavior._order = behavior.order
+			behavior._initOrder = behavior.initOrder
+		}
 		this._behaviors.set(behavior.constructor as any, behavior)
 		if (behavior.init != ParticleEmitterBehavior.prototype.init) {
 			this._initBehaviorList.push(behavior)
-			this._initBehaviorList.sort((a, b) => a.initOrder - b.initOrder)
+			this._initBehaviorList.sort((a, b) => a._initOrder - b._initOrder)
 		}
 		if (behavior.update != ParticleEmitterBehavior.prototype.update) {
 			this._updateBehaviorList.push(behavior)
-			this._updateBehaviorList.sort((a, b) => a.initOrder - b.initOrder)
+			this._updateBehaviorList.sort((a, b) => a._order - b._order)
 		}
+		return behavior
 	}
 
 	public getBehavior<T extends ParticleEmitterBehavior>(behaviorClass: {new(...args: any): T}) {
@@ -55,14 +73,30 @@ export class ParticleEmitter {
 		return behavior as T
 	}
 
-	public startEmitter(duration?: number) {
-		const value = duration === undefined ? this.emitDuration : duration
-		this._emitTimer = value >= 0 ? value : Infinity
-		this._reminder = 0
+	public startEmitter(override?: number) {
+		this.stopEmitter()
+		if (this.waveCount == 0) {
+			const value = override === undefined ? this.emitDuration : override
+			this._emitTimer = value >= 0 ? value : Infinity
+			this._reminder = 0
+		} else {
+			const value = override === undefined ? this.waveCount : override
+			this._waveCounter = value >= 0 ? value : Infinity
+			this._emitTimer = 0
+		}
+		if (this.onEmitterStart) {
+			this.onEmitterStart()
+		}
 	}
 
 	public stopEmitter() {
-		this._emitTimer = 0
+		if (this.emitting) {
+			if (this.onEmitterStop) {
+				this.onEmitterStop()
+			}
+			this._emitTimer = 0
+			this._waveCounter = 0
+		}
 	}
 
 	public emit(waveSize?: number) {
@@ -84,14 +118,39 @@ export class ParticleEmitter {
 				this._updateBehaviorList[i].update(this._pool, deltaMs)
 			}
 		}
-		if (this._emitTimer > 0 && this.frequency > 0) {
-			const value = this._reminder + deltaMs
-			const amount = Math.floor(value / this.frequency)
-			this._reminder = value - (this.frequency * amount)
-			if (amount > 0) {
-				this.emit(amount)
-			}
+		if (this._waveCounter > 0) {
 			this._emitTimer -= deltaMs
+			if (this._emitTimer < 0) {
+				this.emit(this.waveSize)
+				this._waveCounter -= 1
+				if (this._waveCounter == 0) {
+					this._emitTimer = 0
+					if (this.onEmitterStop) {
+						this.onEmitterStop()
+					}
+				} else {
+					this._emitTimer += this.frequency
+				}
+			}
+		} else if (this._emitTimer > 0) {
+			const value = this._reminder + deltaMs
+			if (this.frequency) {
+				const amount = Math.floor(value / this.frequency)
+				this._reminder = value - (this.frequency * amount)
+				if (amount > 0) {
+					this.emit(amount)
+				}
+			} else {
+				this.emit(Infinity)
+			}
+			if (this._emitTimer > deltaMs ) {
+				this._emitTimer -= deltaMs
+			} else {
+				this._emitTimer = 0
+				if (this.onEmitterStop) {
+					this.onEmitterStop()
+				}
+			}
 		}
 	}
 
@@ -100,7 +159,7 @@ export class ParticleEmitter {
 	}
 
 	public get emitting() {
-		return this._emitTimer > 0
+		return this._emitTimer > 0 || this._waveCounter > 0
 	}
 
 	public get container() {

@@ -80,14 +80,17 @@ export class ParticleRenderer extends ObjectRenderer {
 
 	private _shader!: ParticleShader
 	private _geometry: ParticleGeometry
-
 	private _state: State
+
+	private _batchedContainers: ParticleContainer[]
+
 
 	constructor(renderer: Renderer) {
 		super(renderer)
 		this._geometry = new ParticleGeometry(ParticleRenderer.INITIAL_SIZE)
 		this._state = State.for2d()
 		renderer.runners.contextChange.add(this)
+		this._batchedContainers = []
 	}
 
 	public contextChange() {
@@ -97,22 +100,46 @@ export class ParticleRenderer extends ObjectRenderer {
 	}
 
 	public render(container: ParticleContainer) {
-		const requiredSize = container.count
-
-		if (this._geometry.size < requiredSize) {
-			this._geometry.size = Math.pow(2, Math.round(Math.log2(requiredSize)) + 1)
+		const lt = container.localTransform
+		// if we have any local transform other then translation, no batching
+		// we don't want to do a full matrix multiplication for each particle
+		if (lt.a != 1 || lt.b != 0 || lt.c != 0 || lt.d != 1) {
+			if (this._batchedContainers.length) {
+				this.flush()
+			}
+			this._batchedContainers.push(container)
+			this.flush()
+		} else {
+			if (this._batchedContainers.length) {
+				const firstContainer = this._batchedContainers[0]
+				if (firstContainer.baseTexture != container.baseTexture || firstContainer.blendMode != container.blendMode) {
+					this.flush()
+				}
+			}
+			this._batchedContainers.push(container)
 		}
+	}
 
-		const i32 = this._geometry.uint32DataView
-		const f32 = this._geometry.float32DataView
+	private renderContainer(container: ParticleContainer, i32: Uint32Array, f32: Float32Array, offset: number) {
 		const worldAlpha = container.worldAlpha
-		let offset = 0
-
+		const xContainerOffset = container.localTransform.tx - this._batchedContainers[0].localTransform.tx
+		const yContainerOffset = container.localTransform.ty - this._batchedContainers[0].localTransform.ty
 		for (const pool of container.pools) {
+			const sortBuffer = pool.__sortBuffer
 			const count = pool.count
-			const data = pool.data
-			for (let i = 0; i < count; i += 1) {
-				const item = data[i]
+			let rendered = 0
+			// this for loop is odd
+			// it iterates over "i" but checks condition on "rendered"
+			// this is an optimization to not iterate over the whole sort buffer when only a part of it is used
+			for (let i = 0; rendered < count; i += 1) {
+				const item = sortBuffer[i]
+				if (item == null) {
+					continue
+				}
+				// clear the sort buffer entry
+				// this is not done in particle pool and has to be done here
+				sortBuffer[i] = null
+				rendered += 1
 				if (item.alpha == 0) {
 					continue
 				}
@@ -131,8 +158,8 @@ export class ParticleRenderer extends ObjectRenderer {
 				const xOffset = width * item.xAnchor
 				const yOffset = height * item.yAnchor
 
-				const tx = item.x - xOffset * a - yOffset * c
-				const ty = item.y - xOffset * b - yOffset * d
+				const tx = item.x - xOffset * a - yOffset * c + xContainerOffset
+				const ty = item.y - xOffset * b - yOffset * d + yContainerOffset
 
 				const uvs = item._uvs!
 				const color = item.tint | (255 * worldAlpha * item.alpha) << 24
@@ -164,20 +191,42 @@ export class ParticleRenderer extends ObjectRenderer {
 				offset += CONST.WORDS_PER_QUAD
 			}
 		}
+		return offset
+	}
+
+	public flush() {
+		const containers = this._batchedContainers
+		let requiredSize = 0
+		for (let i = 0; i < containers.length; i += 1) {
+			requiredSize += containers[i].count
+		}
+
+		if (this._geometry.size < requiredSize) {
+			this._geometry.size = Math.pow(2, Math.round(Math.log2(requiredSize)) + 1)
+		}
+
+		const i32 = this._geometry.uint32DataView
+		const f32 = this._geometry.float32DataView
+		let offset = 0
+
+		for (let i = 0; i < containers.length; i += 1) {
+			offset = this.renderContainer(containers[i], i32, f32, offset)
+		}
 
 		if (offset == 0) {
 			// nothing to do!
 			return
 		}
 
-		this._state.blendMode = correctBlendMode(container.blendMode, true)
+		this._state.blendMode = correctBlendMode(containers[0].blendMode, true)
 		const quads = offset / CONST.WORDS_PER_QUAD
 		this._geometry.update(quads)
-		this._shader.uniforms.uSampler = container.baseTexture
-		this._shader.uniforms.translationMatrix = container.transform.worldTransform.toArray(true)
+		this._shader.uniforms.uSampler = containers[0].baseTexture
+		this._shader.uniforms.translationMatrix = containers[0].transform.worldTransform.toArray(true)
 		this.renderer.state.set(this._state)
 		this.renderer.shader.bind(this._shader)
 		this.renderer.geometry.bind(this._geometry, this._shader)
 		this.renderer.geometry.draw(DRAW_MODES.TRIANGLES, CONST.INDICES_PER_QUAD * quads, 0)
+		this._batchedContainers = []
 	}
 }

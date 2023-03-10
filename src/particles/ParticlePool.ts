@@ -3,13 +3,19 @@ import { Particle } from "./Particle.js"
 export class ParticlePool {
 	private _size: number
 	private _data: Particle[]
+	private _sortBuffer: (Particle | null)[]
 	private _pivot: number
 
 	private _index: number
 
 	public constructor(size: number) {
 		this._size = size
-		this._data = Array.from({length: size}, () => new Particle())
+		this._data = Array.from({length: size}, (_, i) => {
+			const particle = new Particle()
+			particle._order = i
+			return particle
+		})
+		this._sortBuffer = Array.from({length: size}, () => null)
 		this._pivot = 0
 		this._index = -1
 	}
@@ -71,6 +77,10 @@ export class ParticlePool {
 		}
 	}
 
+	public get remaining() {
+		return this._pivot - (this._index + 1)
+	}
+
 	public get count() {
 		return this._pivot
 	}
@@ -91,4 +101,19 @@ export class ParticlePool {
 		return this._pivot == 0
 	}
 
+	/* @internal */
+	public get __sortBuffer() {
+		// do a insert sort pass on particles to make particle z index stable over time
+		// note that this function does not clear the sort buffer before sorting
+		// it relies on the caller to clean up the buffer
+		// if the caller does not do that everything will crash :)
+		const sortBuffer = this._sortBuffer
+		const count = this._pivot
+		const data = this._data
+		for (let i = 0; i < count; i += 1) {
+			const item = data[i]
+			sortBuffer[item._order] = item
+		}
+		return sortBuffer
+	}
 }

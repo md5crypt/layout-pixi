@@ -7,6 +7,8 @@ export class Particle {
 	public _width = 0
 	/* @internal */
 	public _height = 0
+	/* @internal */
+	public _order = 0
 
 	public x = 0
 	public y = 0

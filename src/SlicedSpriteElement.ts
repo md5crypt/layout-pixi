@@ -226,7 +226,7 @@ export class SlicedSpriteElement extends BaseElement<SlicedSpriteElement> {
 		}
 		this.applyFlip()
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.handle.width * this.pivot[0], this.handle.height * this.pivot[1])
+		this.handle.pivot.set(this.handle.width * this._xPivot, this.handle.height * this._yPivot)
 	}
 
 	public get contentHeight() {

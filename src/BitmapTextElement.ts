@@ -301,7 +301,7 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 		const height = this.height
 		this.lastSize[0] = this.width
 		this.lastSize[1] = this.height
-		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
+		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		let left = this.computedLeft
 		let top = this.computedTop
 		if (this._verticalAlign == "middle") {

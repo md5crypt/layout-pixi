@@ -4,6 +4,12 @@ import { ParticleEmitter } from "./ParticleEmitter.js"
 export class ParticleEmitterBehavior {
 	private _emitter!: ParticleEmitter
 
+	/* @internal */
+	public _order!: number
+
+	/* @internal */
+	public _initOrder!: number
+
 	public get order() {
 		return 0
 	}

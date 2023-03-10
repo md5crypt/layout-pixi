@@ -36,7 +36,7 @@ export class ParticleContainerElement extends BaseElement<ParticleContainerEleme
 			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
 		}
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.width * this.pivot[0], this.height * this.pivot[1])
+		this.handle.pivot.set(this.width * this._xPivot, this.height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 	}

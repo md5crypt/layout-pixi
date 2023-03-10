@@ -27,6 +27,7 @@ export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends Layo
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
 	noPropagation?: boolean
+	origin?: [number, number] | number
 	anchor?: [number, number] | number
 	pivot?: [number, number] | number
 	buttonMode?: boolean
@@ -42,8 +43,12 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	public readonly handle: DisplayObject
 	private _hidden: boolean
 	protected _scale: number
-	protected _anchor: [number, number]
-	protected _pivot: [number, number]
+	protected _xAnchor: number
+	protected _yAnchor: number
+	protected _xPivot: number
+	protected _yPivot: number
+	protected _xOrigin: number
+	protected _yOrigin: number
 	protected _parentScale: number
 	protected _flipped: "vertical" | "horizontal" | false
 
@@ -52,8 +57,12 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		this.handle = handle
 		this._hidden = false
 		this._flipped = false
-		this._anchor = [0, 0]
-		this._pivot = [0.5, 0.5]
+		this._xAnchor = 0
+		this._yAnchor = 0
+		this._xOrigin = 0
+		this._yOrigin = 0
+		this._xPivot = 0.5
+		this._yPivot = 0.5
 		this._parentScale = 1
 		this._scale = 1
 
@@ -85,20 +94,29 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 			}
 			if (config.anchor) {
 				if (Array.isArray(config.anchor)) {
-					this._anchor[0] = config.anchor[0]
-					this._anchor[1] = config.anchor[1]
+					this._xAnchor = config.anchor[0]
+					this._yAnchor = config.anchor[1]
 				} else {
-					this._anchor[0] = config.anchor
-					this._anchor[1] = config.anchor
+					this._xAnchor = config.anchor
+					this._yAnchor = config.anchor
+				}
+			}
+			if (config.origin) {
+				if (Array.isArray(config.origin)) {
+					this._xOrigin = config.origin[0]
+					this._yOrigin = config.origin[1]
+				} else {
+					this._xOrigin = config.origin
+					this._yOrigin = config.origin
 				}
 			}
 			if (config.pivot) {
 				if (Array.isArray(config.pivot)) {
-					this._pivot[0] = config.pivot[0]
-					this._pivot[1] = config.pivot[1]
+					this._xPivot = config.pivot[0]
+					this._yPivot = config.pivot[1]
 				} else {
-					this._pivot[0] = config.pivot
-					this._pivot[1] = config.pivot
+					this._xPivot = config.pivot
+					this._yPivot = config.pivot
 				}
 			}
 			if (config.buttonMode !== undefined) {
@@ -122,11 +140,25 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	public get innerTop() {
-		return this._anchor[1] ? super.innerTop - this._anchor[1] * this._scale * this.height : super.innerTop
+		let top = super.innerTop
+		if (this._yAnchor) {
+			top -= this._yAnchor * this._scale * this.height
+		}
+		if (this._yOrigin) {
+			top += this._yOrigin * this._parent!.height
+		}
+		return top
 	}
 
 	public get innerLeft() {
-		return this._anchor[0] ? super.innerLeft - this._anchor[0] * this._scale * this.width : super.innerLeft
+		let left = super.innerLeft
+		if (this._xAnchor) {
+			left -= this._xAnchor * this._scale * this.width
+		}
+		if (this._xOrigin) {
+			left += this._xOrigin * this._parent!.width
+		}
+		return left
 	}
 
 	public get zIndex() {
@@ -244,9 +276,11 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		let min = Infinity
 		let max = -Infinity
 		for (const child of this.children) {
-			const bounds = child.horizontalBounds
-			min = Math.min(min, bounds[0])
-			max = Math.max(max, bounds[1])
+			if (child.enabled) {
+				const bounds = child.horizontalBounds
+				min = Math.min(min, bounds[0])
+				max = Math.max(max, bounds[1])
+			}
 		}
 		min *= this.scale
 		max *= this.scale
@@ -262,9 +296,11 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		let min = Infinity
 		let max = -Infinity
 		for (const child of this.children) {
-			const bounds = child.verticalBounds
-			min = Math.min(min, bounds[0])
-			max = Math.max(max, bounds[1])
+			if (child.enabled) {
+				const bounds = child.verticalBounds
+				min = Math.min(min, bounds[0])
+				max = Math.max(max, bounds[1])
+			}
 		}
 		min *= this.scale
 		max *= this.scale
@@ -272,87 +308,130 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	public get anchor() {
-		return this._anchor as Readonly<[number, number]>
+		return [this._xAnchor, this.yAnchor] as Readonly<[number, number]>
 	}
 
 	public set anchor(value: Readonly<[number, number]>) {
-		if (this._anchor[0] != value[0] || this._anchor[1] != value[1]) {
-			this._anchor[0] = value[0]
-			this._anchor[1] = value[1]
+		if (this._xAnchor != value[0] || this._yAnchor != value[1]) {
+			this._xAnchor = value[0]
+			this._yAnchor = value[1]
 			this.setDirty()
 		}
 	}
 
 	public get xAnchor() {
-		return this._anchor[0]
+		return this._xAnchor
 	}
 
 	public set xAnchor(value: number) {
-		if (this._anchor[0] != value) {
-			this._anchor[0] = value
+		if (this._xAnchor != value) {
+			this._xAnchor = value
 			this.setDirty()
 		}
 	}
 
 	public get yAnchor() {
-		return this._anchor[1]
+		return this._yAnchor
 	}
 
 	public set yAnchor(value: number) {
-		if (this._anchor[1] != value) {
-			this._anchor[1] = value
+		if (this._yAnchor != value) {
+			this._yAnchor = value
 			this.setDirty()
 		}
 	}
 
 	public setAnchor(x: number, y?: number) {
 		const yValue = y === undefined ? x : y
-		if (this._anchor[0] != x || this._anchor[1] != yValue) {
-			this._anchor[0] = x
-			this._anchor[1] = yValue
+		if (this._xAnchor != x || this._yAnchor != yValue) {
+			this._xAnchor = x
+			this._yAnchor = yValue
+			this.setDirty()
+		}
+	}
+
+	public get origin() {
+		return [this._xOrigin, this.yOrigin] as Readonly<[number, number]>
+	}
+
+	public set origin(value: Readonly<[number, number]>) {
+		if (this._xOrigin != value[0] || this._yOrigin != value[1]) {
+			this._xOrigin = value[0]
+			this._yOrigin = value[1]
+			this.setDirty()
+		}
+	}
+
+	public get xOrigin() {
+		return this._xOrigin
+	}
+
+	public set xOrigin(value: number) {
+		if (this._xOrigin != value) {
+			this._xOrigin = value
+			this.setDirty()
+		}
+	}
+
+	public get yOrigin() {
+		return this._yOrigin
+	}
+
+	public set yOrigin(value: number) {
+		if (this._yOrigin != value) {
+			this._yOrigin = value
+			this.setDirty()
+		}
+	}
+
+	public setOrigin(x: number, y?: number) {
+		const yValue = y === undefined ? x : y
+		if (this._xOrigin != x || this._yOrigin != yValue) {
+			this._xOrigin = x
+			this._yOrigin = yValue
 			this.setDirty()
 		}
 	}
 
 	public get pivot() {
-		return this._pivot as Readonly<[number, number]>
+		return [this._xPivot, this.yPivot] as Readonly<[number, number]>
 	}
 
 	public set pivot(value: Readonly<[number, number]>) {
-		if (this._pivot[0] != value[0] || this._pivot[1] != value[1]) {
-			this._pivot[0] = value[0]
-			this._pivot[1] = value[1]
+		if (this._xPivot != value[0] || this._yPivot != value[1]) {
+			this._xPivot = value[0]
+			this._yPivot = value[1]
 			this.setDirty()
 		}
 	}
 
 	public get xPivot() {
-		return this._pivot[0]
+		return this._xPivot
 	}
 
 	public set xPivot(value: number) {
-		if (this._pivot[0] != value) {
-			this._pivot[0] = value
+		if (this._xPivot != value) {
+			this._xPivot = value
 			this.setDirty()
 		}
 	}
 
 	public get yPivot() {
-		return this._pivot[1]
+		return this._yPivot
 	}
 
 	public set yPivot(value: number) {
-		if (this._pivot[1] != value) {
-			this._pivot[1] = value
+		if (this._yPivot != value) {
+			this._yPivot = value
 			this.setDirty()
 		}
 	}
 
 	public setPivot(x: number, y?: number) {
 		const yValue = y === undefined ? x : y
-		if (this._pivot[0] != x || this._pivot[1] != yValue) {
-			this._pivot[0] = x
-			this._pivot[1] = yValue
+		if (this._xPivot != x || this._yPivot != yValue) {
+			this._xPivot = x
+			this._yPivot = yValue
 			this.setDirty()
 		}
 	}
@@ -387,11 +466,11 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	protected get computedLeft() {
-		return this.innerLeft + this._scale * this.pivot[0] * this.innerWidth
+		return this.innerLeft + this._scale * this._xPivot * this.innerWidth
 	}
 
 	protected get computedTop() {
-		return this.innerTop + this._scale * this.pivot[1] * this.innerHeight
+		return this.innerTop + this._scale * this._yPivot * this.innerHeight
 	}
 
 	protected onDisable() {

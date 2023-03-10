@@ -126,10 +126,11 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 		this.height = this.texture.height * value
 	}
 
-
-	protected crop(rect: number[]) {
+	public crop(rect: number[] | null, setDirty = true) {
 		const texture = this.texture
-		if (texture.noFrame) {
+		if (rect == null) {
+			this.handle.texture = texture
+		} else if (texture.noFrame) {
 			this.handle.texture = new Texture(
 				texture.baseTexture,
 				new Rectangle(
@@ -163,6 +164,9 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				),
 				texture.rotate
 			)
+		}
+		if (setDirty) {
+			this.setDirty(true)
 		}
 	}
 
@@ -220,22 +224,22 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 						scale[0] = innerHeight / textureHeight
 						scale[1] = scale[0]
 						if (this._horizontalAlign == "left") {
-							this.crop([0, 0, diff, 0])
+							this.crop([0, 0, diff, 0], false)
 						} else if (this._horizontalAlign == "center") {
-							this.crop([diff / 2, 0, diff / 2, 0])
+							this.crop([diff / 2, 0, diff / 2, 0], false)
 						} else {
-							this.crop([diff, 0, 0, 0])
+							this.crop([diff, 0, 0, 0], false)
 						}
 					} else {
 						const diff = textureHeight - (textureWidth / elementRatio)
 						scale[0] = innerWidth / textureWidth
 						scale[1] = scale[0]
 						if (this._verticalAlign == "top") {
-							this.crop([0, 0, 0, diff])
+							this.crop([0, 0, 0, diff], false)
 						} else if (this._verticalAlign == "middle") {
-							this.crop([0, diff / 2, 0, diff / 2])
+							this.crop([0, diff / 2, 0, diff / 2], false)
 						} else {
-							this.crop([0, diff, 0, 0])
+							this.crop([0, diff, 0, 0], false)
 						}
 					}
 				}
@@ -282,7 +286,7 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 					}
 				}
 				if (crop) {
-					this.crop([xCrop[0], yCrop[0], xCrop[1], yCrop[1]])
+					this.crop([xCrop[0], yCrop[0], xCrop[1], yCrop[1]], false)
 				}
 				break
 			}
@@ -302,7 +306,7 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 		this.handle.scale.set(scale[0] * this._scale, scale[1] * this._scale)
 		this.applyFlip()
 		this.handle.position.set(left, top)
-		this.handle.anchor.set(this.pivot[0], this.pivot[1])
+		this.handle.anchor.set(this._xPivot, this._yPivot)
 	}
 
 	public get contentHeight() {

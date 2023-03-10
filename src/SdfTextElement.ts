@@ -229,7 +229,7 @@ export class SdfTextElement extends BaseElement<SdfTextElement> {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.pivot.set(width * this.pivot[0] - left, height * this.pivot[1] - top)
+		this.handle.pivot.set(width * this._xPivot - left, height * this._yPivot - top)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 		this.handle.position.set(this.computedLeft, this.computedTop)

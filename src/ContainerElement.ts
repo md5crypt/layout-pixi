@@ -132,10 +132,10 @@ export class ContainerElement<T extends ContainerElement = any> extends BaseElem
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 		this.handle.position.set(
-			this.innerLeft + this._scale * this.pivot[0] * width,
-			this.innerTop + this._scale * this.pivot[1] * height
+			this.innerLeft + this._scale * this._xPivot * width,
+			this.innerTop + this._scale * this._yPivot * height
 		)
-		this.handle.pivot.set(width * this.pivot[0], height * this.pivot[1])
+		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 	}

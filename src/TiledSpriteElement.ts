@@ -101,7 +101,7 @@ export class TiledSpriteElement extends BaseElement<TiledSpriteElement> {
 	protected onUpdate() {
 		super.onUpdate()
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.anchor.set(this.pivot[0], this.pivot[1])
+		this.handle.anchor.set(this._xPivot, this._yPivot)
 		let scale = 1
 		if (this.scaling == "width") {
 			scale = this.innerWidth / this.handle.texture.width
