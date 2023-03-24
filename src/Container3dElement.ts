@@ -1,0 +1,48 @@
+import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
+import type LayoutFactory from "./LayoutFactory.js"
+
+import { Container3d } from "./projection/proj3d/Container3d.js"
+
+export class Container3dElement extends ContainerElement<Container3dElement> {
+	declare public handle: Container3d
+
+	public static register(layoutFactory: LayoutFactory) {
+		layoutFactory.register("container-3d", props => new this(props, new Container3d()))
+	}
+
+	public get zScale() {
+		return this.handle.transform.scale.z
+	}
+
+	public set zScale(value: number) {
+		this.handle.transform.scale.z = value
+	}
+
+	public get zPosition() {
+		return this.handle.transform.position.z
+	}
+
+	public set zPosition(value: number) {
+		this.handle.transform.position.z = value
+	}
+
+	public get zPivot() {
+		return this.handle.transform.pivot.z
+	}
+
+	public set zPivot(value: number) {
+		this.handle.transform.pivot.z = value
+	}
+
+	public get euler() {
+		return this.handle.transform.euler
+	}
+}
+
+export default Container3dElement
+
+declare module "./ElementTypes" {
+	export interface ElementTypes {
+		"container-3d": {config: ContainerElementConfig<Container3dElement>, element: Container3dElement}
+	}
+}

@@ -1,9 +1,9 @@
-import { ContainerElement, ContainerElementConfig } from "../ContainerElement.js"
-import { BaseConstructorProperties } from "../BaseElement.js"
+import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
+import { BaseConstructorProperties } from "./BaseElement.js"
 
-import type LayoutFactory from "../LayoutFactory.js"
+import type LayoutFactory from "./LayoutFactory.js"
 
-import { Camera3d } from "pixi-projection"
+import { Camera3d } from "./projection/proj3d/Camera3d.js"
 
 interface PlaneConfig {
 	focus: number
@@ -33,11 +33,6 @@ export class CameraElement extends ContainerElement<CameraElement> {
 			orthographic: false
 		}
 		if (props.config) {
-			if (props.config.position3d) {
-				this.handle.position3d.x = props.config.position3d.x || 0
-				this.handle.position3d.y = props.config.position3d.y || 0
-				this.handle.position3d.z = props.config.position3d.z
-			}
 			if (props.config.focus !== undefined) {
 				this.planeConfig.focus = props.config.focus
 			}
@@ -52,10 +47,6 @@ export class CameraElement extends ContainerElement<CameraElement> {
 			}
 			this.updatePlanes()
 		}
-	}
-
-	public get position3d() {
-		return this.handle.position3d
 	}
 
 	public set focus(value: number) {
@@ -94,18 +85,32 @@ export class CameraElement extends ContainerElement<CameraElement> {
 		return this.planeConfig.orthographic
 	}
 
+	public get position3d() {
+		return this.handle.transform.position3d
+	}
+
+	public get pivot3d() {
+		return this.handle.transform.pivot3d
+	}
+
+	public get scale3d() {
+		return this.handle.transform.scale3d
+	}
+
 	private updatePlanes() {
 		this.handle.setPlanes(this.planeConfig.focus, this.planeConfig.near, this.planeConfig.far, this.planeConfig.orthographic)
 	}
 
 	protected onUpdate() {
 		super.onUpdate()
+		this.handle.position.x += this.handle.position3d.x
+		this.handle.position.y += this.handle.position3d.y
 	}
 }
 
 export default CameraElement
 
-declare module "../ElementTypes" {
+declare module "./ElementTypes" {
 	export interface ElementTypes {
 		"camera": {config: CameraElementConfig, element: CameraElement}
 	}
