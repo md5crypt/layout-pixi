@@ -103,8 +103,9 @@ export class CameraElement extends ContainerElement<CameraElement> {
 
 	protected onUpdate() {
 		super.onUpdate()
-		this.handle.position.x += this.handle.position3d.x
-		this.handle.position.y += this.handle.position3d.y
+		const scale = this.scale
+		this.handle.position.x += this.handle.position3d.x * scale
+		this.handle.position.y += this.handle.position3d.y * scale
 	}
 }
 
