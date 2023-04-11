@@ -20,6 +20,10 @@
 				"./lib/sdfText/*",
 				"./lib/sdfText/index.d.ts"
 			],
+			"events": [
+				"./lib/events/*",
+				"./lib/events/index.d.ts"
+			],
 			"*": [
 				"./lib/*",
 				"./lib/index.d.ts"
@@ -70,7 +74,6 @@
 		"@pixi/extensions": "^6.5.0",
 		"@pixi/display": "^6.5.0",
 		"@pixi/graphics": "^6.5.0",
-		"@pixi/interaction": "^6.5.0",
 		"@pixi/math": "^6.5.0",
 		"@pixi/mesh-extras": "^6.5.0",
 		"@pixi/sprite": "^6.5.0",

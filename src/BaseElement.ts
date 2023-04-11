@@ -1,6 +1,6 @@
 import { LayoutElement, LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
 import { DisplayObject } from "@pixi/display"
-import type { InteractionEvent } from "@pixi/interaction"
+import type { PixiEvent, PixiEventType } from "./events"
 
 import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
 
@@ -10,14 +10,6 @@ export const enum BlendMode {
 	MULTIPLY = 2,
 	SCREEN = 3
 }
-
-export type EventTypeName = (
-	"click" | "mousedown" | "mousemove" | "mouseout" | "mouseover" | "mouseup" |
-	"mouseupoutside" | "pointercancel" | "pointerdown" | "pointermove" | "pointerout" |
-	"pointerover" | "pointertap" | "pointerup" | "pointerupoutside" | "rightclick" |
-	"rightdown" | "rightup" | "rightupoutside" | "tap" | "touchcancel" | "touchend" |
-	"touchendoutside" | "touchmove" | "touchstart"
-)
 
 export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends LayoutElementConfig<T> {
 	scale?: number
@@ -444,10 +436,10 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		this.handle.buttonMode = value
 	}
 
-	public on(event: EventTypeName, element: string, callback: (event: InteractionEvent) => void): void
-	public on(event: EventTypeName, element: string[], callback: (event: InteractionEvent) => void): void
-	public on(event: EventTypeName, callback: (event: InteractionEvent) => void): void
-	public on(event: EventTypeName, arg1: string | string[] | ((event: InteractionEvent) => void), arg2?: (event: InteractionEvent) => void) {
+	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void) {
 		if (arg2 === undefined) {
 			this.handle.on(event, arg1 as any)
 		} else {

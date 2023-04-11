@@ -1,5 +1,5 @@
 
-import type { LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
+import type { LayoutElementConfig } from "@md5crypt/layout"
 import type { BaseElement, BaseConstructorProperties } from "./BaseElement.js"
 
 import {
@@ -9,7 +9,6 @@ import {
 
 import { ElementTypes } from "./ElementTypes.js"
 import { Texture } from "@pixi/core"
-import type {} from "@pixi/interaction"
 
 type Typify<T> = {[K in keyof T]: T[K]}
 
