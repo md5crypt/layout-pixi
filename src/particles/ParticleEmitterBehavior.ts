@@ -18,6 +18,9 @@ export class ParticleEmitterBehavior {
 		return this.order
 	}
 
+	protected onEmitterAssign() {
+	}
+
 	public init(pool: ParticlePool, amount: number) {
 	}
 
@@ -31,5 +34,6 @@ export class ParticleEmitterBehavior {
 	/* @internal */
 	public set emitter(value: ParticleEmitter) {
 		this._emitter = value
+		this.onEmitterAssign()
 	}
 }

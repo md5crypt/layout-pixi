@@ -21,6 +21,21 @@ export class Particle {
 	public alpha = 1
 	public data = {} as Record<string, any>
 
+	public copyFrom(src: Particle) {
+		this.x = src.x
+		this.y = src.y
+		this.angle = src.angle
+		this.tint = src.tint
+		this.xScale = src.xScale
+		this.yScale = src.yScale
+		this.xAnchor = src.xAnchor
+		this.yAnchor = src.yAnchor
+		this.alpha = src.alpha
+		this._uvs = src._uvs
+		this._width = src._width
+		this._height = src._height
+	}
+
 	public set texture(texture: Texture) {
 		this._uvs = texture._uvs.uvsFloat32
 		this._width = texture.width

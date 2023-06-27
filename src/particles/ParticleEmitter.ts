@@ -11,8 +11,9 @@ export class ParticleEmitter {
 	private _reminder: number
 	private _emitTimer: number
 	private _waveCounter: number
+	private _destroyed: boolean
 
-	public waveSize: number
+	public waveSize: number | (() => number)
 	public waveCount: number
 
 	public emitDuration: number
@@ -35,6 +36,7 @@ export class ParticleEmitter {
 		this.waveCount = 0
 		this.emitDuration = -1
 		this.frequency = 0
+		this._destroyed = false
 	}
 
 	public addBehaviors(...behaviors: ParticleEmitterBehavior[]) {
@@ -100,7 +102,10 @@ export class ParticleEmitter {
 	}
 
 	public emit(waveSize?: number) {
-		const spawnCount = Math.min(this._pool.capacity - this._pool.count, waveSize === undefined ? this.waveSize : waveSize)
+		if (waveSize === undefined) {
+			waveSize = typeof this.waveSize == "number" ? this.waveSize : this.waveSize()
+		}
+		const spawnCount = Math.min(this._pool.capacity - this._pool.count, waveSize)
 		if (spawnCount > 0) {
 			const offset = this._pool.count
 			const created = this._pool.createMany(spawnCount)
@@ -121,7 +126,7 @@ export class ParticleEmitter {
 		if (this._waveCounter > 0) {
 			this._emitTimer -= deltaMs
 			if (this._emitTimer < 0) {
-				this.emit(this.waveSize)
+				this.emit()
 				this._waveCounter -= 1
 				if (this._waveCounter == 0) {
 					this._emitTimer = 0
@@ -155,7 +160,14 @@ export class ParticleEmitter {
 	}
 
 	public destroy() {
-		this._container.removePool(this._pool)
+		if (!this._destroyed) {
+			this._container.removePool(this._pool)
+			this._destroyed = true
+		}
+	}
+
+	public get destroyed() {
+		return this._destroyed
 	}
 
 	public get emitting() {
