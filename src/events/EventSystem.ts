@@ -73,7 +73,10 @@ export class EventSystem extends EventEmitter {
 			const children = displayObject.children
 			for (let i = children.length - 1; i >= 0; i -= 1) {
 				if (children[i].visible && this.treeWalk(children[i], point, callback)) {
-					break
+					if (hit) {
+						callback(displayObject)
+					}
+					return true
 				}
 			}
 		}
