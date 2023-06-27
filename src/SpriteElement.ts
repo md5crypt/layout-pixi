@@ -4,12 +4,19 @@ import { LayoutFactory } from "./LayoutFactory.js"
 import { Texture } from "@pixi/core"
 import { Rectangle, groupD8 } from "@pixi/math"
 import { Sprite } from "@pixi/sprite"
+import { PositioningBox } from "@md5crypt/layout"
+import { SpriteSliced } from "./9slice/index.js"
 
-type ScalingType = "none" | "clipped" | "contain" | "stretch" | "cover" | "cover-vertical" | "cover-horizontal"
+type ScalingType = (
+	"none" | "clipped" | "contain" | "stretch" |
+	"cover" | "cover-vertical" | "cover-horizontal" |
+	"sliced" | "sliced-horizontal" | "sliced-vertical"
+)
 
 export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
 	image?: Texture | string
 	scaling?: ScalingType
+	slices?: PositioningBox
 	verticalAlign?: "top" | "middle" | "bottom"
 	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
@@ -18,14 +25,14 @@ export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> ex
 }
 
 export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T> {
-	declare public readonly handle: Sprite
+	declare public readonly handle: SpriteSliced
 	private _scaling: ScalingType
 	private texture: Texture
 	private _verticalAlign: "top" | "middle" | "bottom"
 	private _horizontalAlign: "left" | "center" | "right"
 
 	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite", props => new this(props, new Sprite(props.factory.resolveAsset(props.config?.image))))
+		layoutFactory.register("sprite", props => new this(props, new SpriteSliced(props.factory.resolveAsset(props.config?.image))))
 	}
 
 	protected constructor(props: BaseConstructorProperties<SpriteElementConfig<any>>, handle: Sprite) {
@@ -41,6 +48,9 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 			}
 			if (config.scaling) {
 				this._scaling = config.scaling
+			}
+			if (config.slices) {
+				this.setSlices(config.slices)
 			}
 			if (config.horizontalAlign) {
 				this._horizontalAlign = config.horizontalAlign
@@ -121,11 +131,6 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 		this.handle.blendMode = value as number
 	}
 
-	public setTextureScale(value: number) {
-		this.width = this.texture.width * value
-		this.height = this.texture.height * value
-	}
-
 	public crop(rect: number[] | null, setDirty = true) {
 		const texture = this.texture
 		if (rect == null) {
@@ -170,16 +175,41 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 		}
 	}
 
+	public setSlices(slices: PositioningBox) {
+		if (typeof slices == "number") {
+			this.handle.leftWidth = slices
+			this.handle.topHeight = slices
+			this.handle.rightWidth = slices
+			this.handle.bottomHeight = slices
+		} else {
+			if (slices.horizontal !== undefined) {
+				this.handle.leftWidth = slices.horizontal
+				this.handle.rightWidth = slices.horizontal
+			} else {
+				this.handle.leftWidth = slices.left || 0
+				this.handle.rightWidth = slices.right || 0
+			}
+			if (slices.vertical !== undefined) {
+				this.handle.topHeight = slices.vertical
+				this.handle.bottomHeight = slices.vertical
+			} else {
+				this.handle.topHeight = slices.top || 0
+				this.handle.bottomHeight = slices.bottom || 0
+			}
+		}
+	}
+
 	protected onUpdate() {
 		super.onUpdate()
-		let left = this.computedLeft
-		let top = this.computedTop
+		let xOffset = 0
+		let yOffset = 0
 		if (this.handle.texture != this.texture) {
 			this.handle.texture = this.texture
 		}
 		let scale = [1, 1]
 		const innerWidth = this.innerWidth
 		const innerHeight = this.innerHeight
+		let isSliced = false
 		switch (this._scaling) {
 			case "stretch":
 				scale[0] = innerWidth / this.texture.width
@@ -204,18 +234,18 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 						scale[0] = height / textureHeight
 						scale[1] = scale[0]
 						if (this._verticalAlign == "top") {
-							top -= (innerHeight - height) / 2
+							yOffset -= (innerHeight - height) / 2
 						} else if (this._verticalAlign == "bottom") {
-							top += (innerHeight - height) / 2
+							yOffset += (innerHeight - height) / 2
 						}
 					} else {
 						const width = innerHeight * textureRatio
 						scale[0] = width / textureWidth
 						scale[1] = scale[0]
 						if (this._horizontalAlign == "left") {
-							left -= (innerWidth - width) / 2
+							xOffset -= (innerWidth - width) / 2
 						} else if (this._horizontalAlign == "right") {
-							left += (innerWidth - width) / 2
+							xOffset += (innerWidth - width) / 2
 						}
 					}
 				} else {
@@ -261,9 +291,9 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 					}
 				} else {
 					if (this._horizontalAlign == "left") {
-						left -= (innerWidth - textureWidth) / 2
+						xOffset -= (innerWidth - textureWidth) / 2
 					} else if (this._horizontalAlign == "right") {
-						left += (innerWidth - textureWidth) / 2
+						xOffset += (innerWidth - textureWidth) / 2
 					}
 				}
 				const textureHeight = this.texture.height
@@ -280,9 +310,9 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 					}
 				} else {
 					if (this._verticalAlign == "top") {
-						top -= (innerHeight - textureHeight) / 2
+						yOffset -= (innerHeight - textureHeight) / 2
 					} else if (this._verticalAlign == "bottom") {
-						top += (innerHeight - textureHeight) / 2
+						yOffset += (innerHeight - textureHeight) / 2
 					}
 				}
 				if (crop) {
@@ -290,22 +320,46 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				}
 				break
 			}
+			case "sliced":
+				this.handle.width = innerWidth
+				this.handle.height = innerHeight
+				isSliced = true
+				break
+			case "sliced-horizontal":
+				scale[0] = scale[1] = innerHeight / this.texture.height
+				this.handle.width = innerWidth / scale[0]
+				this.handle.height = this.texture.height
+				isSliced = true
+				break
+			case "sliced-vertical":
+				scale[0] = scale[1] = innerWidth / this.texture.width
+				this.handle.width = this.texture.width
+				this.handle.height = innerHeight / scale[0]
+				isSliced = true
+				break
 			default:
 				if (this._verticalAlign == "top") {
-					top -= (innerHeight - this.texture.height) / 2
+					yOffset -= (innerHeight - this.texture.height) / 2
 				} else if (this._verticalAlign == "bottom") {
-					top += (innerHeight - this.texture.height) / 2
+					yOffset += (innerHeight - this.texture.height) / 2
 				}
 				if (this._horizontalAlign == "left") {
-					left -= (innerWidth - this.texture.width) / 2
+					xOffset -= (innerWidth - this.texture.width) / 2
 				} else if (this._horizontalAlign == "right") {
-					left += (innerWidth - this.texture.width) / 2
+					xOffset += (innerWidth - this.texture.width) / 2
 				}
 				break
 		}
-		this.handle.scale.set(scale[0] * this._scale, scale[1] * this._scale)
+		this.handle.isSliced = isSliced
+		this.handle.scale.set(
+			scale[0] * this._scale,
+			scale[1] * this._scale
+		)
 		this.applyFlip()
-		this.handle.position.set(left, top)
+		this.handle.position.set(
+			this.computedLeft + xOffset * this._scale,
+			this.computedTop + this._scale * yOffset
+		)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 	}
 

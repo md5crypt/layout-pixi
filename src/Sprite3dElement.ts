@@ -1,16 +1,54 @@
-import { SpriteElement, SpriteElementConfig } from "./SpriteElement.js"
 
 import type LayoutFactory from "./LayoutFactory.js"
 
 import { Sprite3d } from "./projection/proj3d/Sprite3d.js"
 import { Rectangle } from "@pixi/math"
+import { Texture } from "@pixi/core"
+import { BaseElement, BaseConfig, BlendMode, BaseConstructorProperties } from "./BaseElement.js"
 
-export class Sprite3dElement extends SpriteElement<Sprite3dElement> {
+export interface Sprite3dElementConfig<T extends Sprite3dElement = Sprite3dElement> extends BaseConfig<T> {
+	image?: Texture | string
+	tint?: number
+	blendMode?: BlendMode
+}
+
+export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElement<T> {
 	declare public handle: Sprite3d
 
 	public static register(layoutFactory: LayoutFactory) {
 		layoutFactory.register("sprite-3d", props => new this(props, new Sprite3d(props.factory.resolveAsset(props.config?.image))))
 	}
+
+	protected constructor(props: BaseConstructorProperties<Sprite3dElementConfig<any>>, handle: Sprite3d) {
+		super(props, handle)
+		handle.anchor.set(0, 0)
+		const config = props.config
+		if (config) {
+			if (config.tint !== undefined) {
+				this.handle.tint = config.tint
+			}
+			if (config.blendMode !== undefined) {
+				this.handle.blendMode = config.blendMode as number
+			}
+		}
+	}
+
+	protected onUpdate() {
+		super.onUpdate()
+		const innerWidth = this.innerWidth
+		const innerHeight = this.innerHeight
+		const texture = this.handle.texture
+		this.handle.scale.set(innerWidth / texture.width * this._scale, innerHeight / texture.height * this._scale)
+		this.applyFlip()
+		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.pivot.set(innerWidth * this._xPivot, innerHeight * this._yPivot)
+		if (this.handle.interactive) {
+			const width = this.width
+			const height = this.height
+			this.handle.hitArea = new Rectangle(-width * this.pivot[0], -height * this.pivot[1], width, height)
+		}
+	}
+
 
 	public set interactive(value: boolean) {
 		if (super.interactive != value) {
@@ -23,13 +61,32 @@ export class Sprite3dElement extends SpriteElement<Sprite3dElement> {
 		return super.interactive
 	}
 
-	protected onUpdate() {
-		super.onUpdate()
-		if (this.handle.interactive) {
-			const width = this.width
-			const height = this.height
-			this.handle.hitArea = new Rectangle(-width * this.pivot[0], -height * this.pivot[1], width, height)
+	public get image() {
+		return this.handle.texture
+	}
+
+	public set image(value: Texture | string | null) {
+		const texture = this.factory.resolveAsset(value)
+		if (this.handle.texture != texture) {
+			this.handle.texture = texture
+			this.setDirty()
 		}
+	}
+
+	public get tint() {
+		return this.handle.tint
+	}
+
+	public set tint(value: number) {
+		this.handle.tint = value
+	}
+
+	public get blendMode() {
+		return this.handle.blendMode as number as BlendMode
+	}
+
+	public set blendMode(value: BlendMode) {
+		this.handle.blendMode = value as number
 	}
 
 	public get zScale() {
@@ -65,6 +122,6 @@ export default Sprite3dElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"sprite-3d": {config: SpriteElementConfig<Sprite3dElement>, element: Sprite3dElement}
+		"sprite-3d": {config: Sprite3dElementConfig, element: Sprite3dElement}
 	}
 }
