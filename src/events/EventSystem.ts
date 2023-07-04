@@ -206,7 +206,7 @@ export class EventSystem extends EventEmitter {
 						}
 						hoverSet.add(x)
 					})
-					lastHoverSet.forEach(x => x.emit("pointerout", event))
+					lastHoverSet.forEach(x => x.interactive && x.emit("pointerout", event))
 					trackingData.hoverSet = hoverSet
 					if (!cursor) {
 						cursor = this._cursor || "default"
@@ -224,7 +224,7 @@ export class EventSystem extends EventEmitter {
 				break
 			case "down":
 				if (tapSet.size) {
-					tapSet.forEach(x => x.emit("pointerupoutside", event))
+					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
 				}
 				EventSystem.treeWalk(root, event.global, x => {
@@ -248,7 +248,7 @@ export class EventSystem extends EventEmitter {
 					}
 				})
 				if (tapSet.size) {
-					tapSet.forEach(x => x.emit("pointerupoutside", event))
+					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
 				}
 				this.emit("pointerup", event)
@@ -256,7 +256,7 @@ export class EventSystem extends EventEmitter {
 				break
 			case "cancel":
 				if (tapSet.size) {
-					tapSet.forEach(x => x.emit("pointerupoutside", event))
+					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
 				}
 				this.emit("pointerup", event)
