@@ -45,10 +45,17 @@ export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElemen
 		if (this.handle.interactive) {
 			const width = this.width
 			const height = this.height
-			this.handle.hitArea = new Rectangle(-width * this.pivot[0], -height * this.pivot[1], width, height)
+			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 	}
 
+	public get contentHeight() {
+		return this.handle.texture.height
+	}
+
+	public get contentWidth() {
+		return this.handle.texture.width
+	}
 
 	public set interactive(value: boolean) {
 		if (super.interactive != value) {

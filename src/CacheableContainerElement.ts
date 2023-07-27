@@ -55,7 +55,7 @@ class CacheableContainer extends Container {
 			if (texture) {
 				texture.destroy()
 			}
-			texture = RenderTexture.create({width: targetWidth, height: targetWidth, resolution: 1})
+			texture = RenderTexture.create({width: targetWidth, height: targetHeight, resolution: 1})
 			this._texture = texture
 		}
 		const matrix = new Matrix()
