@@ -81,6 +81,7 @@ export class ParticleRenderer extends ObjectRenderer {
 	private _shader!: ParticleShader
 	private _geometry: ParticleGeometry
 	private _state: State
+	private _tmpPoint = {x: 0, y: 0}
 
 	private _batchedContainers: ParticleContainer[]
 
@@ -100,30 +101,35 @@ export class ParticleRenderer extends ObjectRenderer {
 	}
 
 	public render(container: ParticleContainer) {
-		const lt = container.localTransform
-		// if we have any local transform other then translation, no batching
-		// we don't want to do a full matrix multiplication for each particle
-		if (lt.a != 1 || lt.b != 0 || lt.c != 0 || lt.d != 1) {
-			if (this._batchedContainers.length) {
+		if (this._batchedContainers.length) {
+			const firstContainer = this._batchedContainers[0]
+			const wt1 = container.worldTransform
+			const wt2 = firstContainer.worldTransform
+			const canBatch = (
+				firstContainer.baseTexture == container.baseTexture &&
+				firstContainer.blendMode == container.blendMode &&
+				(wt1.a == wt2.a && wt1.b == wt2.b && wt1.c == wt2.c && wt1.d == wt2.d)
+			)
+			if (!canBatch) {
 				this.flush()
 			}
-			this._batchedContainers.push(container)
-			this.flush()
-		} else {
-			if (this._batchedContainers.length) {
-				const firstContainer = this._batchedContainers[0]
-				if (firstContainer.baseTexture != container.baseTexture || firstContainer.blendMode != container.blendMode) {
-					this.flush()
-				}
-			}
-			this._batchedContainers.push(container)
 		}
+		this._batchedContainers.push(container)
 	}
 
 	private renderContainer(container: ParticleContainer, i32: Uint32Array, f32: Float32Array, offset: number) {
 		const worldAlpha = container.worldAlpha
-		const xContainerOffset = container.localTransform.tx - this._batchedContainers[0].localTransform.tx
-		const yContainerOffset = container.localTransform.ty - this._batchedContainers[0].localTransform.ty
+		const point = this._tmpPoint
+		if (this._batchedContainers.length > 1) {
+			point.x = container.worldTransform.tx
+			point.y = container.worldTransform.ty
+			this._batchedContainers[0].worldTransform.applyInverse(point, point)
+		} else {
+			point.x = 0
+			point.y = 0
+		}
+		const xContainerOffset = point.x
+		const yContainerOffset = point.y
 		for (const pool of container.pools) {
 			const sortBuffer = pool.__sortBuffer
 			const count = pool.count
