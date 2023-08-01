@@ -226,36 +226,61 @@ export class TextElement extends BaseElement<TextElement> {
 	private fitText(width: number, height: number) {
 		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
 		if (scale < 1) {
-			this.updateFontSize(Math.max(1, Math.floor(this.handle.style.fontSize as number * scale)))
+			this.updateFontSize(Math.max(1, (this.handle.style.fontSize as number) * scale))
 			this.meausreText()
 		}
 	}
 
 	private fitWrappedText(width: number, height: number) {
 		let upperBound = this._style.fontSize as number
-		let lowerBound = upperBound * Math.min(width / this.textRect![0], height / this.textRect![1])
+		let lowerBound = upperBound * height / this.textRect![1]
 		let lastSize = upperBound
 		if (lowerBound >= upperBound) {
+			if (width < this.textRect![0]) {
+				this.fitText(width, height)
+			}
 			return
 		}
+		let bestValue = lowerBound
+		let bestScore = Math.abs(1 - height / this.textRect![1])
 		for (let i = 0; i < 8; i += 1) {
-			const currentSize = Math.round((upperBound + lowerBound) / 2)
-			if (currentSize == lastSize) {
-				return
-			}
+			const currentSize = (upperBound + lowerBound) / 2
 			lastSize = currentSize
 			this.updateFontSize(currentSize)
 			this.meausreText()
-			const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
+			const scale = height / this.textRect![1]
+			const score = Math.abs(1 - scale)
+			if (score < bestScore) {
+				bestScore = score
+				bestValue = currentSize
+			}
 			if (scale > 1) {
 				lowerBound = currentSize
-				upperBound = currentSize * scale
-			} else {
+				upperBound = Math.min(upperBound, currentSize * scale * 1.25)
+			} else if (scale < 1) {
+				lowerBound = Math.max(lowerBound, currentSize * scale * 0.75)
 				upperBound = currentSize
-				lowerBound = currentSize * scale
+			} else {
+				lowerBound = currentSize
+				upperBound = currentSize
+			}
+			if (i > 4 ? bestScore < 0.05 : score < 0.025) {
+				break
 			}
 		}
-		this.fitText(width, height)
+		if (lastSize != bestValue) {
+			this.updateFontSize(bestValue)
+			this.meausreText()
+		}
+		if (width < this.textRect![0]) {
+			this.fitText(width, height)
+		} else if (bestScore > 0.02) {
+			const scale = height / this.textRect![1]
+			if (scale < 1) {
+				this.updateFontSize(Math.max(lowerBound, (this.handle.style.fontSize as number) * scale))
+				this.meausreText()
+			}
+		}
 	}
 
 	protected redraw() {

@@ -26,9 +26,9 @@ export class SlicedSpriteElement extends SpriteElement {
 	}
 
 	public set scaling(value: any) {
-		if (value == "width") {
+		if (value == "height") {
 			super.scaling = "sliced-horizontal"
-		} else if (value == "value") {
+		} else if (value == "width") {
 			super.scaling = "sliced-vertical"
 		} else {
 			super.scaling = "sliced"
