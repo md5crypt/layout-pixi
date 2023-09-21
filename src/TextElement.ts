@@ -197,7 +197,7 @@ export class TextElement extends BaseElement<TextElement> {
 	}
 
 	private updateFontSize(value: number) {
-		this.handle.style.fontSize = value
+		this.handle.style.fontSize = Math.max(1, value)
 		const scale = value / (this._style.fontSize as number)
 		if (this._style.lineHeight) {
 			this.handle.style.lineHeight = this._style.lineHeight * scale
@@ -226,12 +226,16 @@ export class TextElement extends BaseElement<TextElement> {
 	private fitText(width: number, height: number) {
 		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
 		if (scale < 1) {
-			this.updateFontSize(Math.max(1, (this.handle.style.fontSize as number) * scale))
+			this.updateFontSize((this.handle.style.fontSize as number) * scale)
 			this.meausreText()
 		}
 	}
 
 	private fitWrappedText(width: number, height: number) {
+		if (width == 0 || height == 0) {
+			this.fitText(0, 0)
+			return
+		}
 		let upperBound = this._style.fontSize as number
 		let lowerBound = upperBound * height / this.textRect![1]
 		let lastSize = upperBound

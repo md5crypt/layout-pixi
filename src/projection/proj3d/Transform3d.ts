@@ -58,4 +58,12 @@ export class Transform3d extends Transform {
 			}
 		}
 	}
+
+	public set rotation(value: number) {
+		this.euler.z = value
+	}
+
+	public get rotation() {
+		return this.euler.z
+	}
 }
