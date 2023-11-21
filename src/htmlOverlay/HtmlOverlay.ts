@@ -2,6 +2,8 @@ import { Renderer } from "@pixi/core"
 import { DisplayObject } from "@pixi/display"
 
 export class HtmlOverlay extends DisplayObject {
+	public static dpi = window.devicePixelRatio
+
 	// pixi types require this
 	public sortDirty!: boolean
 
@@ -78,7 +80,8 @@ export class HtmlOverlay extends DisplayObject {
 		if (this.transform._worldID != this._lastTransformWorldId) {
 			this._lastTransformWorldId = this.transform._worldID
 			const wt = this.transform.worldTransform
-			style.transform = `matrix(${wt.a},${wt.b},${wt.c},${wt.d},${wt.tx},${wt.ty})`
+			const dpi = HtmlOverlay.dpi
+			style.transform = `matrix(${wt.a / dpi},${wt.b / dpi},${wt.c / dpi},${wt.d / dpi},${wt.tx / dpi},${wt.ty / dpi})`
 		}
 
 		if (this._dimensionsDirty) {
