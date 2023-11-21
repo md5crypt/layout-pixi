@@ -288,7 +288,7 @@ export class TextElement extends BaseElement<TextElement> {
 	}
 
 	protected redraw() {
-		if (this.style.fontSize == 0 || !this.text) {
+		if (this._style.fontSize == 0 || !this.text) {
 			this.needsRedraw = false
 			this.textRect = [0, 0]
 			return

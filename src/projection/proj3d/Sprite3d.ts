@@ -6,11 +6,34 @@ export class Sprite3d extends Sprite {
 	declare transform: Transform3d
 	private _culledByFrustrum: boolean
 
+	public frontTexture: Texture
+	public backTexture: Texture | null
+
 	constructor(texture: Texture) {
 		super(texture)
 		this.transform = new Transform3d()
 		this.vertexData = new Float32Array(12)
 		this._culledByFrustrum = false
+		this.frontTexture = texture
+		this.backTexture = null
+	}
+
+	private updateTexture() {
+		let texture
+		if (this.backTexture) {
+			texture = this.transform.worldTransform3d.isFrontFace() ? this.frontTexture : this.backTexture
+		} else {
+			texture = this.frontTexture
+		}
+		if (!texture) {
+			texture = Texture.EMPTY
+		}
+		if (texture != this._texture) {
+			this._textureID = -1
+			this._textureTrimmedID = -1
+			this._texture = texture
+		}
+		return texture
 	}
 
 	isFrontFace(forceUpdate = false): boolean {
@@ -30,7 +53,7 @@ export class Sprite3d extends Sprite {
 	}
 
 	calculateVertices() {
-		const texture = this._texture
+		const texture = this.updateTexture()
 
 		// @ts-expect-error
 		if (this._transformID === this.transform._worldID && this._textureID === texture._updateID) {
@@ -39,7 +62,7 @@ export class Sprite3d extends Sprite {
 
 		// update texture UV here, because base texture can be changed without calling `_onTextureUpdate`
 		if (this._textureID !== texture._updateID) {
-			this.uvs = this._texture._uvs.uvsFloat32
+			this.uvs = texture._uvs.uvsFloat32
 		}
 
 		// @ts-expect-error
@@ -135,5 +158,13 @@ export class Sprite3d extends Sprite {
 
 	get pivot() {
 		return this.transform.pivot
+	}
+
+	set texture(value: Texture) {
+		this.frontTexture = value
+	}
+
+	get texture() {
+		return this.frontTexture
 	}
 }

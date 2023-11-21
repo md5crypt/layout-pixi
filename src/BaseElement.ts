@@ -19,7 +19,6 @@ export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends Layo
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
 	noPropagation?: boolean
-	origin?: [number, number] | number
 	anchor?: [number, number] | number
 	pivot?: [number, number] | number
 	buttonMode?: boolean
@@ -34,14 +33,10 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 
 	public readonly handle: DisplayObject
 	private _hidden: boolean
-	protected _scale: number
 	protected _xAnchor: number
 	protected _yAnchor: number
 	protected _xPivot: number
 	protected _yPivot: number
-	protected _xOrigin: number
-	protected _yOrigin: number
-	protected _parentScale: number
 	protected _flipped: "vertical" | "horizontal" | false
 
 	protected constructor(props: BaseConstructorProperties<BaseConfig<T>>, handle: DisplayObject) {
@@ -51,12 +46,8 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		this._flipped = false
 		this._xAnchor = 0
 		this._yAnchor = 0
-		this._xOrigin = 0
-		this._yOrigin = 0
 		this._xPivot = 0.5
 		this._yPivot = 0.5
-		this._parentScale = 1
-		this._scale = 1
 
 		const config = props.config
 		if (config) {
@@ -93,15 +84,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 					this._yAnchor = config.anchor
 				}
 			}
-			if (config.origin) {
-				if (Array.isArray(config.origin)) {
-					this._xOrigin = config.origin[0]
-					this._yOrigin = config.origin[1]
-				} else {
-					this._xOrigin = config.origin
-					this._yOrigin = config.origin
-				}
-			}
 			if (config.pivot) {
 				if (Array.isArray(config.pivot)) {
 					this._xPivot = config.pivot[0]
@@ -136,9 +118,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		if (this._yAnchor) {
 			top -= this._yAnchor * this._scale * this.height
 		}
-		if (this._yOrigin) {
-			top += this._yOrigin * this._parent!.height
-		}
 		return top
 	}
 
@@ -146,9 +125,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		let left = super.innerLeft
 		if (this._xAnchor) {
 			left -= this._xAnchor * this._scale * this.width
-		}
-		if (this._xOrigin) {
-			left += this._xOrigin * this._parent!.width
 		}
 		return left
 	}
@@ -206,99 +182,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		this.handle.interactiveChildren = !value
 	}
 
-	public set scale(value: number) {
-		if (this._scale != value) {
-			this._scale = value
-			this.onScaleChange(this._parentScale)
-			this.setDirty()
-		}
-	}
-
-	public get scale() {
-		return this._scale
-	}
-
-	public get globalScale() {
-		return this._scale * this._parentScale
-	}
-
-	public get globalBoundingBox() {
-		const result = {
-			top: this.innerTop,
-			left: this.innerLeft,
-			width: 0,
-			height: 0
-		}
-		if (this._width == null && this.flexMode == "none") {
-			const bounds = this.horizontalBounds
-			result.left -= result.left - bounds[0]
-			result.width = bounds[1] - bounds[0]
-		} else {
-			result.width = this.innerWidth * this._scale
-		}
-		if (this._height == null && this.flexMode == "none") {
-			const bounds = this.verticalBounds
-			result.top -= result.top - bounds[0]
-			result.height = bounds[1] - bounds[0]
-		} else {
-			result.height = this.innerHeight * this._scale
-		}
-		let parent = this._parent
-		while (parent) {
-			if (parent._scale) {
-				result.top = (result.top * parent._scale) + parent.innerTop
-				result.left = (result.left * parent._scale) + parent.innerLeft
-				result.width *= parent._scale
-				result.height *= parent._scale
-			} else {
-				result.top += parent.innerTop
-				result.left += parent.innerLeft
-			}
-			parent = parent._parent
-		}
-		return result
-	}
-
-	public get horizontalBounds() {
-		const width = this.width * this.scale
-		const offset = this.innerLeft
-		if (width || this._width === 0) {
-			return [offset, offset + width]
-		}
-		let min = Infinity
-		let max = -Infinity
-		for (const child of this.children) {
-			if (child.enabled) {
-				const bounds = child.horizontalBounds
-				min = Math.min(min, bounds[0])
-				max = Math.max(max, bounds[1])
-			}
-		}
-		min *= this.scale
-		max *= this.scale
-		return isFinite(min + max) ? [offset + min, offset + max] : [offset, offset]
-	}
-
-	public get verticalBounds() {
-		const height = this.height * this.scale
-		const offset = this.innerTop
-		if (height || this._height === 0) {
-			return [offset, offset + height]
-		}
-		let min = Infinity
-		let max = -Infinity
-		for (const child of this.children) {
-			if (child.enabled) {
-				const bounds = child.verticalBounds
-				min = Math.min(min, bounds[0])
-				max = Math.max(max, bounds[1])
-			}
-		}
-		min *= this.scale
-		max *= this.scale
-		return isFinite(min + max) ? [offset + min, offset + max] : [offset, offset]
-	}
-
 	public get anchor() {
 		return [this._xAnchor, this.yAnchor] as Readonly<[number, number]>
 	}
@@ -338,49 +221,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		if (this._xAnchor != x || this._yAnchor != yValue) {
 			this._xAnchor = x
 			this._yAnchor = yValue
-			this.setDirty()
-		}
-	}
-
-	public get origin() {
-		return [this._xOrigin, this.yOrigin] as Readonly<[number, number]>
-	}
-
-	public set origin(value: Readonly<[number, number]>) {
-		if (this._xOrigin != value[0] || this._yOrigin != value[1]) {
-			this._xOrigin = value[0]
-			this._yOrigin = value[1]
-			this.setDirty()
-		}
-	}
-
-	public get xOrigin() {
-		return this._xOrigin
-	}
-
-	public set xOrigin(value: number) {
-		if (this._xOrigin != value) {
-			this._xOrigin = value
-			this.setDirty()
-		}
-	}
-
-	public get yOrigin() {
-		return this._yOrigin
-	}
-
-	public set yOrigin(value: number) {
-		if (this._yOrigin != value) {
-			this._yOrigin = value
-			this.setDirty()
-		}
-	}
-
-	public setOrigin(x: number, y?: number) {
-		const yValue = y === undefined ? x : y
-		if (this._xOrigin != x || this._yOrigin != yValue) {
-			this._xOrigin = x
-			this._yOrigin = yValue
 			this.setDirty()
 		}
 	}
@@ -447,13 +287,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 			for (const element of elements ) {
 				this.getElement(element).on(event, arg2 as any)
 			}
-		}
-	}
-
-	public onScaleChange(parentScale: number) {
-		this._parentScale = parentScale
-		for (let i = 0; i < this.children.length; i += 1) {
-			this.children[i].onScaleChange(parentScale * this._scale)
 		}
 	}
 

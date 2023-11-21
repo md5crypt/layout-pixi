@@ -8,6 +8,7 @@ import { BaseElement, BaseConfig, BlendMode, BaseConstructorProperties } from ".
 
 export interface Sprite3dElementConfig<T extends Sprite3dElement = Sprite3dElement> extends BaseConfig<T> {
 	image?: Texture | string
+	backImage?: Texture | string
 	tint?: number
 	blendMode?: BlendMode
 }
@@ -29,6 +30,9 @@ export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElemen
 			}
 			if (config.blendMode !== undefined) {
 				this.handle.blendMode = config.blendMode as number
+			}
+			if (config.backImage) {
+				this.handle.backTexture = props.factory.resolveAsset(config.backImage)
 			}
 		}
 	}
@@ -69,13 +73,25 @@ export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElemen
 	}
 
 	public get image() {
-		return this.handle.texture
+		return this.handle.frontTexture
 	}
 
 	public set image(value: Texture | string | null) {
 		const texture = this.factory.resolveAsset(value)
-		if (this.handle.texture != texture) {
-			this.handle.texture = texture
+		if (this.handle.frontTexture != texture) {
+			this.handle.frontTexture = texture
+			this.setDirty()
+		}
+	}
+
+	public get backImage() {
+		return this.handle.backTexture
+	}
+
+	public set backImage(value: Texture | string | null) {
+		const texture = value === null ? null : this.factory.resolveAsset(value)
+		if (this.handle.backTexture != texture) {
+			this.handle.backTexture = texture
 			this.setDirty()
 		}
 	}

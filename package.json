@@ -1,6 +1,6 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "1.4.5",
+	"version": "1.4.6",
 	"description": "pixi support for @md5crypt/layout",
 	"main": "lib/index.js",
 	"types": "lib",
@@ -27,6 +27,10 @@
 			"9slice": [
 				"./lib/9slice/*",
 				"./lib/9slice/index.d.ts"
+			],
+			"htmlOverlay": [
+				"./lib/htmlOverlay/*",
+				"./lib/htmlOverlay/index.d.ts"
 			],
 			"*": [
 				"./lib/*",
@@ -73,7 +77,7 @@
 		"typescript": "^4.8.3"
 	},
 	"peerDependencies": {
-		"@md5crypt/layout": "^1.2.2",
+		"@md5crypt/layout": "^1.2.4",
 		"@pixi/core": "^6.5.0",
 		"@pixi/display": "^6.5.0",
 		"@pixi/extensions": "^6.5.0",
