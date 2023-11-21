@@ -4,6 +4,18 @@ import { DisplayObject } from "@pixi/display"
 export class HtmlOverlay extends DisplayObject {
 	public static dpi = window.devicePixelRatio
 
+	private static _attached = new Set<HtmlOverlay>()
+	private static _paint = 0
+
+	public static prune() {
+		for (const item of this._attached) {
+			if (item._paint != this._paint) {
+				item.detach()
+			}
+		}
+		this._paint += 1
+	}
+
 	// pixi types require this
 	public sortDirty!: boolean
 
@@ -28,6 +40,8 @@ export class HtmlOverlay extends DisplayObject {
 	private _contentDirty: boolean
 	private _attached: boolean
 	private _interactiveChildren: boolean
+
+	private _paint: number
 
 	constructor() {
 		super()
@@ -56,6 +70,7 @@ export class HtmlOverlay extends DisplayObject {
 		this._style = ""
 		this._content = ""
 		this._interactiveChildren = true
+		this._paint = 0
 	}
 
 	public calculateBounds() {
@@ -68,10 +83,7 @@ export class HtmlOverlay extends DisplayObject {
 
 	public render(renderer: Renderer) {
 		if (!this.visible || this.worldAlpha <= 0 || !this.renderable) {
-			if (this._attached) {
-				this._attached = false
-				this._htmlRoot.remove()
-			}
+			this.detach()
 			return
 		}
 
@@ -113,14 +125,17 @@ export class HtmlOverlay extends DisplayObject {
 		if (!this._attached) {
 			this._attached = true
 			renderer.view.parentNode!.appendChild(this._htmlRoot)
+			HtmlOverlay._attached.add(this)
 		}
+
+		this._paint = HtmlOverlay._paint
 	}
 
-	// needs to be called manually as the element won't be automatically deleted from DOM
 	public detach() {
 		if (this._attached) {
 			this._attached = false
 			this._htmlRoot.remove()
+			HtmlOverlay._attached.delete(this)
 		}
 	}
 
