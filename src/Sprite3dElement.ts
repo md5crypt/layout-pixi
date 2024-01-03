@@ -45,11 +45,14 @@ export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElemen
 		this.handle.scale.set(innerWidth / texture.width * this._scale, innerHeight / texture.height * this._scale)
 		this.applyFlip()
 		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(innerWidth * this._xPivot, innerHeight * this._yPivot)
+		this.handle.anchor.set(this._xPivot, this._yPivot)
 		if (this.handle.interactive) {
-			const width = this.width
-			const height = this.height
-			this.handle.hitArea = new Rectangle(0, 0, width, height)
+			this.handle.hitArea = new Rectangle(
+				this._xPivot * -texture.width,
+				this._yPivot * -texture.height,
+				texture.width,
+				texture.height
+			)
 		}
 	}
 

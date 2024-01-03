@@ -97,6 +97,24 @@ export class CameraElement extends ContainerElement<CameraElement> {
 		return this.handle.transform.scale3d
 	}
 
+	public set projectionOffsetX(value: number) {
+		this.handle.transform.position3d.x = value
+		this.setDirty()
+	}
+
+	public get projectionOffsetX() {
+		return this.handle.transform.position3d.x
+	}
+
+	public set projectionOffsetY(value: number) {
+		this.handle.transform.position3d.y = value
+		this.setDirty()
+	}
+
+	public get projectionOffsetY() {
+		return this.handle.transform.position3d.y
+	}
+
 	private updatePlanes() {
 		this.handle.setPlanes(this.planeConfig.focus, this.planeConfig.near, this.planeConfig.far, this.planeConfig.orthographic)
 	}
