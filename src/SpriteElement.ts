@@ -1,9 +1,8 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
-import { LayoutFactory } from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { Texture } from "@pixi/core"
 import { Rectangle, groupD8 } from "@pixi/math"
-import { Sprite } from "@pixi/sprite"
 import { PositioningBox } from "@md5crypt/layout"
 import { SpriteSliced } from "./9slice/index.js"
 
@@ -12,8 +11,7 @@ type ScalingType = (
 	"cover" | "cover-vertical" | "cover-horizontal" |
 	"sliced" | "sliced-horizontal" | "sliced-vertical"
 )
-
-export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> extends BaseConfig<T> {
+export interface SpriteElementConfig<TYPE extends string = "sprite", SELF extends SpriteElement = SpriteElement> extends BaseElementConfig<TYPE, SELF> {
 	image?: Texture | string
 	scaling?: ScalingType
 	slices?: PositioningBox
@@ -24,48 +22,44 @@ export interface SpriteElementConfig<T extends SpriteElement = SpriteElement> ex
 	blendMode?: BlendMode
 }
 
-export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T> {
-	declare public readonly handle: SpriteSliced
-
+export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends BaseElement<HANDLE> {
 	private _scaling: ScalingType
 	private _texture: Texture
 	private _yAlign: number
 	private _xAlign: number
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite", props => new this(props, new SpriteSliced(props.factory.resolveAsset(props.config?.image))))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("sprite", config => new this(factory, config, new SpriteSliced(factory.resolveAsset(config.image))))
 	}
 
-	protected constructor(props: BaseConstructorProperties<SpriteElementConfig<any>>, handle: Sprite) {
-		super(props, handle)
+	protected constructor(factory: PixiLayoutFactory, config: Readonly<SpriteElementConfig<any, any>>, handle: HANDLE) {
+		super(factory, config, handle)
 		this._texture = this.handle.texture
 		this._scaling = "none"
 		this._xAlign = 0
 		this._yAlign = 0
-		const config = props.config
-		if (config) {
-			if (config.tint !== undefined) {
-				this.handle.tint = config.tint
-			}
-			if (config.scaling) {
-				this._scaling = config.scaling
-			}
-			if (config.slices) {
-				this.setSlices(config.slices)
-			}
-			if (config.horizontalAlign) {
-				this.horizontalAlign = config.horizontalAlign
-			}
-			if (config.verticalAlign) {
-				this.verticalAlign = config.verticalAlign
-			}
-			if (config.roundPixels !== undefined) {
-				this.handle.roundPixels = config.roundPixels
-			}
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
+		if (config.tint !== undefined) {
+			this.handle.tint = config.tint
 		}
+		if (config.scaling) {
+			this._scaling = config.scaling
+		}
+		if (config.slices) {
+			this.setSlices(config.slices)
+		}
+		if (config.horizontalAlign) {
+			this.horizontalAlign = config.horizontalAlign
+		}
+		if (config.verticalAlign) {
+			this.verticalAlign = config.verticalAlign
+		}
+		if (config.roundPixels !== undefined) {
+			this.handle.roundPixels = config.roundPixels
+		}
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
+		}
+
 	}
 
 	public get image() {
@@ -226,55 +220,55 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 			)
 		}
 		if (setDirty) {
-			this.setDirty(true)
+			this.setDirty()
 		}
 	}
 
 	public setSlices(slices: PositioningBox) {
+		const handle = this.handle
 		if (typeof slices == "number") {
-			this.handle.leftWidth = slices
-			this.handle.topHeight = slices
-			this.handle.rightWidth = slices
-			this.handle.bottomHeight = slices
+			handle.leftWidth = slices
+			handle.topHeight = slices
+			handle.rightWidth = slices
+			handle.bottomHeight = slices
 		} else {
 			if (slices.horizontal !== undefined) {
-				this.handle.leftWidth = slices.horizontal
-				this.handle.rightWidth = slices.horizontal
+				handle.leftWidth = slices.horizontal
+				handle.rightWidth = slices.horizontal
 			} else {
-				this.handle.leftWidth = slices.left || 0
-				this.handle.rightWidth = slices.right || 0
+				handle.leftWidth = slices.left || 0
+				handle.rightWidth = slices.right || 0
 			}
 			if (slices.vertical !== undefined) {
-				this.handle.topHeight = slices.vertical
-				this.handle.bottomHeight = slices.vertical
+				handle.topHeight = slices.vertical
+				handle.bottomHeight = slices.vertical
 			} else {
-				this.handle.topHeight = slices.top || 0
-				this.handle.bottomHeight = slices.bottom || 0
+				handle.topHeight = slices.top || 0
+				handle.bottomHeight = slices.bottom || 0
 			}
 		}
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
 		let xOffset = 0
 		let yOffset = 0
 		if (this.handle.texture != this._texture) {
 			this.handle.texture = this._texture
 		}
 		let scale = [1, 1]
-		const innerWidth = this.innerWidth
-		const innerHeight = this.innerHeight
+		const computedWidth = this.computedWidth
+		const computedHeight = this.computedHeight
 		let isSliced = false
 		switch (this._scaling) {
 			case "stretch":
-				scale[0] = innerWidth / this._texture.width
-				scale[1] = innerHeight / this._texture.height
+				scale[0] = computedWidth / this._texture.width
+				scale[1] = computedHeight / this._texture.height
 				break
 			case "contain":
 			case "cover":
 			case "cover-vertical":
 			case "cover-horizontal": {
-				const elementRatio = innerWidth / innerHeight
+				const elementRatio = computedWidth / computedHeight
 				const textureWidth = this._texture.width
 				const textureHeight = this._texture.height
 				const textureRatio = textureWidth / textureHeight
@@ -285,25 +279,25 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				)
 				if (contain) {
 					if (elementRatio < textureRatio) {
-						const height = innerWidth / textureRatio
+						const height = computedWidth / textureRatio
 						scale[0] = height / textureHeight
 						scale[1] = scale[0]
-						yOffset += (innerHeight - height) * (this._yAlign - this._yPivot)
+						yOffset += (computedHeight - height) * (this._yAlign - this._yPivot)
 					} else {
-						const width = innerHeight * textureRatio
+						const width = computedHeight * textureRatio
 						scale[0] = width / textureWidth
 						scale[1] = scale[0]
-						xOffset += (innerWidth - width) * (this._xAlign - this._xPivot)
+						xOffset += (computedWidth - width) * (this._xAlign - this._xPivot)
 					}
 				} else {
 					if (elementRatio < textureRatio) {
 						const diff = textureWidth - (textureHeight * elementRatio)
-						scale[0] = innerHeight / textureHeight
+						scale[0] = computedHeight / textureHeight
 						scale[1] = scale[0]
 						this.crop([diff * this._xAlign, 0, diff * (1 - this._xAlign), 0], false)
 					} else {
 						const diff = textureHeight - (textureWidth / elementRatio)
-						scale[0] = innerWidth / textureWidth
+						scale[0] = computedWidth / textureWidth
 						scale[1] = scale[0]
 						this.crop([0, diff * this._yAlign, 0, diff * (1 - this._yAlign)], false)
 					}
@@ -314,21 +308,21 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				const textureWidth = this._texture.width
 				let crop = false
 				let xCrop = [0, 0]
-				if (innerWidth < textureWidth) {
+				if (computedWidth < textureWidth) {
 					crop = true
-					xCrop[0] = (textureWidth - innerWidth) * this._xAlign
-					xCrop[1] = (textureWidth - innerWidth) * (1 - this._xAlign)
+					xCrop[0] = (textureWidth - computedWidth) * this._xAlign
+					xCrop[1] = (textureWidth - computedWidth) * (1 - this._xAlign)
 				} else {
-					xOffset += (innerWidth - textureWidth) * (this._xAlign - this._xPivot)
+					xOffset += (computedWidth - textureWidth) * (this._xAlign - this._xPivot)
 				}
 				const textureHeight = this._texture.height
 				let yCrop = [0, 0]
-				if (innerHeight < textureHeight) {
+				if (computedHeight < textureHeight) {
 					crop = true
-					yCrop[0] = (textureHeight - innerHeight) * this._yAlign
-					yCrop[1] = (textureHeight - innerHeight) * (1 - this._yAlign)
+					yCrop[0] = (textureHeight - computedHeight) * this._yAlign
+					yCrop[1] = (textureHeight - computedHeight) * (1 - this._yAlign)
 				} else {
-					yOffset += (innerHeight - textureHeight) * (this._yAlign - this._yPivot)
+					yOffset += (computedHeight - textureHeight) * (this._yAlign - this._yPivot)
 				}
 				if (crop) {
 					this.crop([xCrop[0], yCrop[0], xCrop[1], yCrop[1]], false)
@@ -336,25 +330,25 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 				break
 			}
 			case "sliced":
-				this.handle.width = innerWidth
-				this.handle.height = innerHeight
+				this.handle.width = computedWidth
+				this.handle.height = computedHeight
 				isSliced = true
 				break
 			case "sliced-horizontal":
-				scale[0] = scale[1] = innerHeight / this._texture.height
-				this.handle.width = innerWidth / scale[0]
+				scale[0] = scale[1] = computedHeight / this._texture.height
+				this.handle.width = computedWidth / scale[0]
 				this.handle.height = this._texture.height
 				isSliced = true
 				break
 			case "sliced-vertical":
-				scale[0] = scale[1] = innerWidth / this._texture.width
+				scale[0] = scale[1] = computedWidth / this._texture.width
 				this.handle.width = this._texture.width
-				this.handle.height = innerHeight / scale[0]
+				this.handle.height = computedHeight / scale[0]
 				isSliced = true
 				break
 			default:
-				xOffset += (innerHeight - this._texture.height) * (this._yAlign - this._yPivot)
-				yOffset += (innerWidth - this._texture.width) * (this._yAlign - this._yPivot)
+				xOffset += (computedHeight - this._texture.height) * (this._yAlign - this._yPivot)
+				yOffset += (computedWidth - this._texture.width) * (this._yAlign - this._yPivot)
 				break
 		}
 		this.handle.isSliced = isSliced
@@ -364,8 +358,8 @@ export class SpriteElement<T extends SpriteElement = any> extends BaseElement<T>
 		)
 		this.applyFlip()
 		this.handle.position.set(
-			this.computedLeft + xOffset * this._scale,
-			this.computedTop + this._scale * yOffset
+			this.pivotLeft + xOffset * this._scale,
+			this.pivotTop + this._scale * yOffset
 		)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 	}
@@ -383,6 +377,6 @@ export default SpriteElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		sprite: {config: SpriteElementConfig, element: SpriteElement}
+		sprite: SpriteElementConfig
 	}
 }

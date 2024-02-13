@@ -1,13 +1,14 @@
 import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
-import type LayoutFactory from "./LayoutFactory.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { Container3d } from "./projection/proj3d/Container3d.js"
 
-export class Container3dElement extends ContainerElement<Container3dElement> {
-	declare public handle: Container3d
+export interface Container3dElementConfig extends ContainerElementConfig<"container-3d", Container3dElement> {
+}
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("container-3d", props => new this(props, new Container3d()))
+export class Container3dElement extends ContainerElement<Container3d> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("container-3d", config => new this(factory, config, new Container3d()))
 	}
 
 	public get zScale() {
@@ -43,6 +44,6 @@ export default Container3dElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"container-3d": {config: ContainerElementConfig<Container3dElement>, element: Container3dElement}
+		"container-3d": Container3dElementConfig
 	}
 }

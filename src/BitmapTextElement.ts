@@ -1,28 +1,18 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { IBitmapTextStyle, BitmapText, BitmapFont, BitmapFontData } from "@pixi/text-bitmap"
 import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
 
-export interface BitmapTextElementConfig<T extends BitmapTextElement = BitmapTextElement> extends BaseConfig<T> {
+export interface BitmapTextElementConfig extends BaseElementConfig<"text-bitmap", BitmapTextElement> {
 	text?: string
 	fit?: boolean
 	verticalAlign?: "top" | "bottom" | "middle"
 	style?: Partial<IBitmapTextStyle & {wordWrap: boolean}>
 }
 
-export class BitmapTextElement extends BaseElement<BitmapTextElement> {
-	declare public readonly handle: BitmapText
-
-	private style: Partial<IBitmapTextStyle & {wordWrap: boolean}>
-	private _text!: string
-	private textRect: [number, number] | null
-	private _fit: boolean
-	private _verticalAlign: "top" | "bottom" | "middle"
-	private lastSize: [number, number]
-	private needsRedraw: boolean
-
-	public static register(layoutFactory: LayoutFactory) {
+export class BitmapTextElement extends BaseElement<BitmapText> {
+	public static register(factory: PixiLayoutFactory) {
 		if (!("null" in BitmapFont.available)) {
 			const data = new BitmapFontData()
 			data.common.push({lineHeight: 0})
@@ -30,38 +20,36 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 			data.page.push({file: "", id: 0})
 			BitmapFont.install(data, Texture.EMPTY)
 		}
-		layoutFactory.register("text-bitmap", props => new this(props, new BitmapText("", {fontName: "null"})))
+		factory.register("text-bitmap", props => new this(factory, props))
 	}
 
-	protected constructor(props: BaseConstructorProperties<BitmapTextElementConfig<any>>, handle: BitmapText) {
-		super(props, handle)
+	private style: Partial<IBitmapTextStyle & {wordWrap: boolean}>
+	private _text!: string
+	private textRect: [number, number] | null
+	private _fit: boolean
+	private _verticalAlign: "top" | "bottom" | "middle"
+	private lastSize: [number, number]
+
+	private constructor(factory: PixiLayoutFactory, config: Readonly<BitmapTextElementConfig>) {
+		super(factory, config, new BitmapText("", {fontName: "null"}))
 		this.textRect = null
 		this.style = {}
 		this._fit = false
 		this._verticalAlign = "top"
 		this.lastSize = [0, 0]
 		this._text = ""
-		this.needsRedraw = true
-		const config = props.config
-		if (config) {
-			if (config.style) {
-				this.style = {...config.style}
-			}
-			if (config.text) {
-				this._text = config.text
-			}
-			if (config.fit) {
-				this._fit = true
-			}
-			if (config.verticalAlign) {
-				this._verticalAlign = config.verticalAlign
-			}
+		if (config.style) {
+			this.style = {...config.style}
 		}
-	}
-
-	public setDirty(force?: boolean) {
-		this.needsRedraw = true
-		return super.setDirty(force)
+		if (config.text) {
+			this._text = config.text
+		}
+		if (config.fit) {
+			this._fit = true
+		}
+		if (config.verticalAlign) {
+			this._verticalAlign = config.verticalAlign
+		}
 	}
 
 	private get maxWidth() {
@@ -69,26 +57,12 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 			return 0
 		} else if (this.style.maxWidth) {
 			return this.style.maxWidth
-		} else if (this.widthReady) {
-			return this.width
+		} else {
+			return this.computedWidth
 		}
-		return 0
 	}
 
 	private meausreText(fontSize: number) {
-		const skipRedraw = (
-			this.textRect && (
-				!this.needsRedraw || !(
-					(this.style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
-					(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
-				)
-			)
-		)
-
-		if (skipRedraw) {
-			return
-		}
-
 		if (!this._text || !this.style.fontName) {
 			this.textRect = [0, 0]
 			return
@@ -165,16 +139,10 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 	}
 
 	public get contentHeight() {
-		if (this.needsRedraw) {
-			this.redraw()
-		}
 		return this.textRect![1]
 	}
 
 	public get contentWidth() {
-		if (this.needsRedraw) {
-			this.redraw()
-		}
 		return this.textRect![0]
 	}
 
@@ -271,7 +239,19 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 	}
 
 	protected redraw() {
-		this.needsRedraw = false
+		const skipRedraw = (
+			this.textRect && (
+				!this.dirty || !(
+					(this.style.wordWrap && (this.computedWidth != this.lastSize[0])) ||
+					(this._fit && (this.lastSize[0] != this.computedWidth || this.lastSize[1] != this.computedHeight))
+				)
+			)
+		)
+
+		if (skipRedraw) {
+			return
+		}
+	
 		this.handle.text = this._text
 		this.handle.fontName = this.style.fontName || "null"
 		this.handle.align = this.style.align || "left"
@@ -282,8 +262,8 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 		this.meausreText(this.style.fontSize || 1)
 
 		if (this._fit) {
-			const width = this.widthReady ? this.width : Infinity
-			const height = this.heightReady ? this.height : Infinity
+			const width = this.hasWidth ? this.computedWidth : Infinity
+			const height = this.hasHeight ? this.computedHeight : Infinity
 			if (this.style.wordWrap) {
 				this.fitWrappedText(width, height)
 			} else {
@@ -293,26 +273,23 @@ export class BitmapTextElement extends BaseElement<BitmapTextElement> {
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		if (this.needsRedraw) {
-			this.redraw()
-		}
-		const width = this.width
-		const height = this.height
-		this.lastSize[0] = this.width
-		this.lastSize[1] = this.height
+		this.redraw()
+		const width = this.computedWidth
+		const height = this.computedHeight
+		this.lastSize[0] = width
+		this.lastSize[1] = height
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
-		let left = this.computedLeft
-		let top = this.computedTop
+		let left = this.pivotLeft
+		let top = this.pivotTop
 		if (this._verticalAlign == "middle") {
-			top += (this.height - this.contentHeight) * (this._scale / 2)
+			top += (height - this.contentHeight) * (this._scale / 2)
 		} else if (this._verticalAlign == "bottom") {
-			top += (this.height - this.contentHeight) * this._scale
+			top += (height - this.contentHeight) * this._scale
 		}
 		if (this.style.align == "center") {
-			left += (this.width - this.contentWidth) * (this._scale / 2)
+			left += (width - this.contentWidth) * (this._scale / 2)
 		} else if (this.style.align == "right") {
-			left += (this.width - this.contentWidth) * this._scale
+			left += (width - this.contentWidth) * this._scale
 		}
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
@@ -327,6 +304,6 @@ export default BitmapTextElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"text-bitmap": {config: BitmapTextElementConfig, element: BitmapTextElement}
+		"text-bitmap": BitmapTextElementConfig
 	}
 }

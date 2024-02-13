@@ -1,23 +1,22 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { SdfTextFlushBarrier } from "./sdfText/index.js"
 
-export class SdfTextFlushBarrierElement extends BaseElement<SdfTextFlushBarrierElement> {
-	declare public readonly handle: SdfTextFlushBarrier
+export interface SdfTextFlushBarrierElementConfig extends BaseElementConfig<"text-sdf-barrier", SdfTextFlushBarrierElement> {
+}
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("text-sdf-barrier", props => new this(props, new SdfTextFlushBarrier()))
+export class SdfTextFlushBarrierElement extends BaseElement<SdfTextFlushBarrier> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("text-sdf-barrier", config => new this(factory, config))
 	}
 
-	protected constructor(props: BaseConstructorProperties<BaseConfig<any>>, handle: SdfTextFlushBarrier) {
-		super(props, handle)
+	protected constructor(factory: PixiLayoutFactory, config: SdfTextFlushBarrierElementConfig) {
+		super(factory, config, new SdfTextFlushBarrier())
 	}
 }
 
-export default SdfTextFlushBarrierElement
-
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"text-sdf-barrier": {config: BaseConfig, element: SdfTextFlushBarrierElement}
+		"text-sdf-barrier": SdfTextFlushBarrierElementConfig
 	}
 }

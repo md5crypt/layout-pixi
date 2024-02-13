@@ -1,11 +1,11 @@
-import { BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
-import { LayoutFactory } from "./LayoutFactory.js"
+import { BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { PositioningBox } from "@md5crypt/layout"
 import { Texture } from "@pixi/core"
 import { SpriteElement } from "./SpriteElement.js"
 import { SpriteSliced } from "./9slice/index.js"
 
-export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = SlicedSpriteElement> extends BaseConfig<T> {
+export interface SlicedSpriteElementConfig extends BaseElementConfig<"sprite-sliced", SlicedSpriteElement> {
 	image?: Texture | string
 	tint?: number
 	slices?: PositioningBox
@@ -16,12 +16,12 @@ export interface SlicedSpriteElementConfig<T extends SlicedSpriteElement = Slice
 
 // @depreciated
 export class SlicedSpriteElement extends SpriteElement {
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite-sliced", props => new this(props, new SpriteSliced(props.factory.resolveAsset(props.config?.image))))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("sprite-sliced", config => new this(factory, config, new SpriteSliced(factory.resolveAsset(config.image))))
 	}
 
-	protected constructor(props: BaseConstructorProperties<SlicedSpriteElementConfig<any>>, handle: SpriteSliced) {
-		super(props as any, handle)
+	protected constructor(factory: PixiLayoutFactory, config: SlicedSpriteElementConfig, handle: SpriteSliced) {
+		super(factory, config as any, handle)
 		this.scaling = super.scaling
 	}
 
@@ -46,10 +46,8 @@ export class SlicedSpriteElement extends SpriteElement {
 	}
 }
 
-export default SlicedSpriteElement
-
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"sprite-sliced": {config: SlicedSpriteElementConfig, element: SlicedSpriteElement}
+		"sprite-sliced": SlicedSpriteElementConfig
 	}
 }

@@ -1,24 +1,20 @@
-import { BaseElement, BaseConfig } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { Container } from "@pixi/display"
 
-export class RootElement extends BaseElement<RootElement> {
-	declare public readonly handle: Container
+export interface RootElementConfig extends BaseElementConfig<"root", RootElement> {
+}
 
-	public constructor(factory: LayoutFactory, config?: BaseConfig) {
-		super({
-			type: "root",
-			factory,
-			config: {
-				name: "@root",
-				volatile: true,
-				...config
-			}
-		}, new Container())
+export class RootElement extends BaseElement<Container> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("root", config => new this(factory, config))
+	}
+
+	public constructor(factory: PixiLayoutFactory, config: RootElementConfig) {
+		super(factory, config, new Container())
 	}
 
 	protected onUpdate() {
-		this.handle.visible = this.enabled
 		this.handle.scale.set(this._scale)
 	}
 
@@ -33,8 +29,11 @@ export class RootElement extends BaseElement<RootElement> {
 			const position = this.handle.getChildIndex(this.children[index].handle)
 			this.handle.addChildAt(element.handle, position)
 		}
-		element.onScaleChange(this._parentScale * this._scale)
 	}
 }
 
-export default RootElement
+declare module "./ElementTypes" {
+	export interface ElementTypes {
+		"root": RootElementConfig
+	}
+}

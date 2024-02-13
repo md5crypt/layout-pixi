@@ -1,4 +1,4 @@
-export * from "./LayoutFactory.js"
+export * from "./PixiLayoutFactory.js"
 export * from "./BaseElement.js"
 export * from "./ContainerElement.js"
 export * from "./GraphicElement.js"

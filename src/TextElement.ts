@@ -1,8 +1,8 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { Text, TextStyle, TextMetrics, ITextStyle } from "@pixi/text"
 
-export interface TextElementConfig<T extends TextElement = TextElement> extends BaseConfig<T> {
+export interface TextElementConfig extends BaseElementConfig<"text", TextElement> {
 	text?: string
 	fit?: boolean
 	verticalAlign?: "top" | "bottom" | "middle"
@@ -12,85 +12,85 @@ export interface TextElementConfig<T extends TextElement = TextElement> extends 
 	blendMode?: BlendMode
 }
 
-export class TextElement extends BaseElement<TextElement> {
-	declare public readonly handle: Text
+class PatchedText extends Text {
+	private _masterResolution = 1
+	private _resolutionCache = 1
+
+	updateTransform() {
+		const transform = this.parent.transform.worldTransform
+		const resolution = this._masterResolution * Math.sqrt(transform.a * transform.a + transform.b * transform.b)
+		if (this._resolutionCache != this._masterResolution) {
+			this._resolutionCache = resolution * this._masterResolution
+			super.resolution = resolution
+		}
+		super.updateTransform()
+	}
+
+	public set resolution(value: number) {
+		this._masterResolution = value
+	}
+
+	public get resolution() {
+		return this._masterResolution
+	}
+}
+
+export class TextElement extends BaseElement<Text> {
+	public static defaultResolution = 2
+
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("text", config => new this(factory, config))
+	}
 
 	private _style: Partial<ITextStyle>
 	private _text!: string
-	private textRect: [number, number] | null
+	private _textRect: [number, number] | null
 	private _fit: boolean
 	private _verticalAlign: "top" | "bottom" | "middle"
-	private lastSize: [number, number]
-	private _resolution: number
-	private needsRedraw: boolean
+	private _lastSize: [number, number]
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("text", props => new this(props, new Text("")))
-	}
-
-	protected constructor(props: BaseConstructorProperties<TextElementConfig<any>>, handle: Text) {
-		super(props, handle)
-		this.textRect = null
+	protected constructor(factory: PixiLayoutFactory, config: TextElementConfig) {
+		super(factory, config, new PatchedText(""))
+		this._textRect = null
 		this._style = {}
 		this._fit = false
 		this._verticalAlign = "top"
-		this.lastSize = [0, 0]
-		this._resolution = 1
+		this._lastSize = [0, 0]
 		this._text = ""
-		this.needsRedraw = true
-		const config = props.config
-		if (config) {
-			if (config.style) {
-				this._style = {...config.style}
-			}
-			if (config.text) {
-				this._text = config.text
-			}
-			if (config.fit) {
-				this._fit = true
-			}
-			if (config.verticalAlign) {
-				this._verticalAlign = config.verticalAlign
-			}
-			if (config.roundPixels) {
-				this.handle.roundPixels = config.roundPixels
-			}
-			if (config.resolution) {
-				this._resolution = config.resolution
-			}
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
+		this.resolution = config.resolution || TextElement.defaultResolution
+		if (config.style) {
+			this._style = {...config.style}
 		}
-	}
-
-	public setDirty(force?: boolean) {
-		this.needsRedraw = true
-		return super.setDirty(force)
-	}
-
-	public onScaleChange(scale: number) {
-		super.onScaleChange(scale)
-		const resolution = this._resolution * this._parentScale
-		if (this.handle.resolution != resolution) {
-			this.handle.resolution = resolution
-			this.textRect = null
-			this.setDirty()
+		if (config.text) {
+			this._text = config.text
+		}
+		if (config.fit) {
+			this._fit = true
+		}
+		if (config.verticalAlign) {
+			this._verticalAlign = config.verticalAlign
+		}
+		if (config.roundPixels) {
+			this.handle.roundPixels = config.roundPixels
+		}
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
 		}
 	}
 
 	private meausreText() {
 		if (!this._text || this.style.fontSize == 0) {
-			this.textRect = [0, 0]
+			this._textRect = [0, 0]
 		} else {
-			if (this._style.wordWrap && this.widthReady) {
-				if (this._style.wordWrapWidth != this.width) {
-					this._style.wordWrapWidth = this.width
-					this.handle.style.wordWrapWidth = this.width
+			if (this._style.wordWrap) {
+				const width = this.computedWidth
+				if (this._style.wordWrapWidth != width) {
+					this._style.wordWrapWidth = width
+					this.handle.style.wordWrapWidth = width
 				}
 			}
 			const textMetrics = TextMetrics.measureText(this._text, new TextStyle(this.handle.style))
-			this.textRect = [
+			this._textRect = [
 				textMetrics.width,
 				textMetrics.height
 			]
@@ -98,28 +98,19 @@ export class TextElement extends BaseElement<TextElement> {
 	}
 
 	public set resolution(value: number) {
-		this._resolution = value
-		this.handle.resolution = this._resolution * this._parentScale
-		this.textRect = null
-		this.setDirty()
+		this.handle.resolution = value
 	}
 
 	public get resolution() {
-		return this._resolution
+		return this.handle.resolution
 	}
 
 	public get contentHeight() {
-		if (this.needsRedraw) {
-			this.redraw()
-		}
-		return this.textRect![1]
+		return this._textRect![1]
 	}
 
 	public get contentWidth() {
-		if (this.needsRedraw) {
-			this.redraw()
-		}
-		return this.textRect![0]
+		return this._textRect![0]
 	}
 
 	public get fit() {
@@ -129,7 +120,7 @@ export class TextElement extends BaseElement<TextElement> {
 	public set fit(value: boolean) {
 		if (this._fit != value) {
 			this._fit = value
-			this.textRect = null
+			this._textRect = null
 			this.setDirty()
 		}
 	}
@@ -159,7 +150,7 @@ export class TextElement extends BaseElement<TextElement> {
 
 	public set text(value: string) {
 		this._text = value
-		this.textRect = null
+		this._textRect = null
 		this.setDirty()
 	}
 
@@ -169,13 +160,13 @@ export class TextElement extends BaseElement<TextElement> {
 
 	public setStyle(style: Partial<ITextStyle>) {
 		this._style = {...style}
-		this.textRect = null
+		this._textRect = null
 		this.setDirty()
 	}
 
 	public updateStyle(style: Partial<ITextStyle>) {
 		Object.assign(this._style, style)
-		this.textRect = null
+		this._textRect = null
 		this.setDirty()
 	}
 
@@ -184,7 +175,7 @@ export class TextElement extends BaseElement<TextElement> {
 		if (style) {
 			this._style = {...style}
 		}
-		this.textRect = null
+		this._textRect = null
 		this.setDirty()
 	}
 
@@ -212,8 +203,7 @@ export class TextElement extends BaseElement<TextElement> {
 			this.handle.style.strokeThickness = this._style.strokeThickness * scale
 		}
 		if (this._style.dropShadowDistance) {
-			// multiply dropShadowDistance by resolution to fix a bug in PIXI code
-			this.handle.style.dropShadowDistance = (this._style.dropShadowDistance * scale) * (this._resolution * this._parentScale)
+			this.handle.style.dropShadowDistance = this._style.dropShadowDistance * scale
 		}
 		if (this._style.dropShadowBlur) {
 			this.handle.style.dropShadowBlur = this._style.dropShadowBlur * scale
@@ -224,7 +214,7 @@ export class TextElement extends BaseElement<TextElement> {
 	}
 
 	private fitText(width: number, height: number) {
-		const scale = Math.min(width / this.textRect![0], height / this.textRect![1])
+		const scale = Math.min(width / this._textRect![0], height / this._textRect![1])
 		if (scale < 1) {
 			this.updateFontSize((this.handle.style.fontSize as number) * scale)
 			this.meausreText()
@@ -237,22 +227,22 @@ export class TextElement extends BaseElement<TextElement> {
 			return
 		}
 		let upperBound = this._style.fontSize as number
-		let lowerBound = upperBound * height / this.textRect![1]
+		let lowerBound = upperBound * height / this._textRect![1]
 		let lastSize = upperBound
 		if (lowerBound >= upperBound) {
-			if (width < this.textRect![0]) {
+			if (width < this._textRect![0]) {
 				this.fitText(width, height)
 			}
 			return
 		}
 		let bestValue = lowerBound
-		let bestScore = Math.abs(1 - height / this.textRect![1])
+		let bestScore = Math.abs(1 - height / this._textRect![1])
 		for (let i = 0; i < 8; i += 1) {
 			const currentSize = (upperBound + lowerBound) / 2
 			lastSize = currentSize
 			this.updateFontSize(currentSize)
 			this.meausreText()
-			const scale = height / this.textRect![1]
+			const scale = height / this._textRect![1]
 			const score = Math.abs(1 - scale)
 			if (score < bestScore) {
 				bestScore = score
@@ -276,10 +266,10 @@ export class TextElement extends BaseElement<TextElement> {
 			this.updateFontSize(bestValue)
 			this.meausreText()
 		}
-		if (width < this.textRect![0]) {
+		if (width < this._textRect![0]) {
 			this.fitText(width, height)
 		} else if (bestScore > 0.02) {
-			const scale = height / this.textRect![1]
+			const scale = height / this._textRect![1]
 			if (scale < 1) {
 				this.updateFontSize(Math.max(lowerBound, (this.handle.style.fontSize as number) * scale))
 				this.meausreText()
@@ -289,28 +279,26 @@ export class TextElement extends BaseElement<TextElement> {
 
 	protected redraw() {
 		if (this._style.fontSize == 0 || !this.text) {
-			this.needsRedraw = false
-			this.textRect = [0, 0]
+			this._textRect = [0, 0]
 			return
 		}
 		const skipRedraw = (
-			this.textRect && (
-				!this.needsRedraw || !(
-					(this._style.wordWrap && (!this.widthReady || (this.width != this.lastSize[0]))) ||
-					(this._fit && (!this.widthReady || this.lastSize[0] != this.width || !this.heightReady || this.lastSize[1] != this.height))
+			this._textRect && (
+				!(
+					(this._style.wordWrap && (this.computedWidth != this._lastSize[0])) ||
+					(this._fit && (this._lastSize[0] != this.computedWidth || this._lastSize[1] != this.computedHeight))
 				)
 			)
 		)
 		if (skipRedraw) {
 			return
 		}
-		this.needsRedraw = false
 		this.handle.text = this._text
 		this.handle.style = this._style
 		this.meausreText()
 		if (this._fit) {
-			const width = this.widthReady ? this.width : Infinity
-			const height = this.heightReady ? this.height : Infinity
+			const width = this.hasWidth ? this.computedWidth : Infinity
+			const height = this.hasHeight ? this.computedHeight : Infinity
 			if (this._style.wordWrap) {
 				this.fitWrappedText(width, height)
 			} else {
@@ -324,30 +312,28 @@ export class TextElement extends BaseElement<TextElement> {
 			this.handle.visible = false
 			return
 		}
-		super.onUpdate()
-		if (this.needsRedraw) {
-			this.redraw()
-		}
-		const width = this.width
-		const height = this.height
-		this.lastSize[0] = this.width
-		this.lastSize[1] = this.height
-		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
-		let left = this.computedLeft
-		let top = this.computedTop
+		this.redraw()
+		const width = this.computedWidth
+		const height = this.computedHeight
+		this._lastSize[0] = width
+		this._lastSize[1] = height
+		this.handle.visible = true
+		let left = 0
+		let top = 0
 		if (this._verticalAlign == "middle") {
-			top += (this.height - this.contentHeight) * (this._scale / 2)
+			top += (height - this.contentHeight) /2
 		} else if (this._verticalAlign == "bottom") {
-			top += (this.height - this.contentHeight) * this._scale
+			top += height - this.contentHeight
 		}
 		if (this._style.align == "center") {
-			left += (this.width - this.contentWidth) * (this._scale / 2)
+			left += (width - this.contentWidth) / 2
 		} else if (this._style.align == "right") {
-			left += (this.width - this.contentWidth) * this._scale
+			left += width - this.contentWidth
 		}
+		this.handle.pivot.set(width * this._xPivot - left, height * this._yPivot - top)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
-		this.handle.position.set(left, top)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
 	}
 }
 
@@ -355,6 +341,6 @@ export default TextElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		text: {config: TextElementConfig, element: TextElement}
+		text: TextElementConfig
 	}
 }

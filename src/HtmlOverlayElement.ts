@@ -1,41 +1,41 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { HtmlOverlay } from "./htmlOverlay/index.js"
 import { Rectangle } from "@pixi/math"
+import { Renderer } from "@pixi/core"
 
-export interface HtmlOverlayElementConfig extends BaseConfig<HtmlOverlayElement> {
+export interface HtmlOverlayElementConfig extends BaseElementConfig<"html", HtmlOverlayElement> {
 	style?: string
 	content?: string
+	persistent?: boolean
 }
 
-export class HtmlOverlayElement extends BaseElement<HtmlOverlayElement> {
-	declare public readonly handle: HtmlOverlay
+export class HtmlOverlayElement extends BaseElement<HtmlOverlay> {
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("htmlOverlay", props => new this(props, new HtmlOverlay()))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("html", config => new this(factory, config))
 	}
 
-	protected constructor(props: BaseConstructorProperties<HtmlOverlayElementConfig>, handle: HtmlOverlay) {
-		super(props, handle)
-		const config = props.config
-		if (config) {
-			if (config.style) {
-				this.handle.style = config.style
-			}
-			if (config.content) {
-				this.handle.content = config.content
-			}
+	private constructor(factory: PixiLayoutFactory, config: HtmlOverlayElementConfig) {
+		super(factory, config, new HtmlOverlay())
+		if (config.style) {
+			this.handle.style = config.style
+		}
+		if (config.content) {
+			this.handle.content = config.content
+		}
+		if (config.persistent) {
+			this.handle.persistent = config.persistent
 		}
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		const width = this.innerWidth
-		const height = this.innerHeight
+		const width = this.computedWidth
+		const height = this.computedHeight
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.handle.width = width
@@ -63,6 +63,22 @@ export class HtmlOverlayElement extends BaseElement<HtmlOverlayElement> {
 		return this.handle.content
 	}
 
+	public set persistent(value: boolean) {
+		this.handle.persistent = value
+	}
+
+	public get persistent() {
+		return this.handle.persistent
+	}
+
+	public detach() {
+		this.handle.detach()
+	}
+
+	public attach(renderer: Renderer) {
+		this.handle.attach(renderer)
+	}
+
 	public get htmlRoot() {
 		return this.handle.htmlRoot
 	}
@@ -72,6 +88,6 @@ export default HtmlOverlayElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"htmlOverlay": {config: HtmlOverlayElementConfig, element: HtmlOverlayElement}
+		"html": HtmlOverlayElementConfig
 	}
 }

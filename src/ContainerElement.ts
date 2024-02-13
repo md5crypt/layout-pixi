@@ -1,40 +1,35 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { Container } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
 
 import { Graphics } from "@pixi/graphics"
 import { Sprite } from "@pixi/sprite"
 
-export interface ContainerElementConfig<T extends BaseElement = ContainerElement> extends BaseConfig<T> {
+export interface ContainerElementConfig<TYPE extends string = "container", SELF extends ContainerElement = ContainerElement> extends BaseElementConfig<TYPE, SELF> {
 	mask?: boolean
 	sorted?: boolean
 }
 
-export class ContainerElement<T extends ContainerElement = any> extends BaseElement<T> {
-	declare public readonly handle: Container
+export class ContainerElement<HANDLE extends Container = Container> extends BaseElement<HANDLE> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("container", config => new this(factory, config, new Container()))
+	}
 
 	private _mask: boolean
 	private _maskObject?: Sprite | Graphics
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("container", props => new this(props, new Container()))
-	}
-
-	protected constructor(props: BaseConstructorProperties<ContainerElementConfig<any>>, handle: Container) {
-		super(props, handle)
-		const config = props.config
+	protected constructor(factory: PixiLayoutFactory, config: ContainerElementConfig<any, any>, handle: HANDLE) {
+		super(factory, config, handle)
 		this._mask = false
-		if (config) {
-			if (config.scale) {
-				this.scale = config.scale
-			}
-			if (config.mask) {
-				this._mask = true
-			}
-			if (config.sorted && this.handle) {
-				this.handle.sortableChildren = true
-			}
+		if (config.scale) {
+			this._scale = config.scale
+		}
+		if (config.mask) {
+			this._mask = true
+		}
+		if (config.sorted && this.handle) {
+			this.handle.sortableChildren = true
 		}
 	}
 
@@ -101,25 +96,18 @@ export class ContainerElement<T extends ContainerElement = any> extends BaseElem
 			const position = this.handle.getChildIndex(this.children[index].handle)
 			this.handle.addChildAt(element.handle, position)
 		}
-		element.onScaleChange(this._parentScale * this._scale)
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		const width = this.width
-		const height = this.height
+		const width = this.computedWidth
+		const height = this.computedHeight
 		if (this._mask) {
 			if (this._maskObject) {
 				this.handle.mask = this._maskObject
 			} else {
 				const graphics = new Graphics()
 				graphics.beginFill(0xFFFFFF)
-				graphics.drawRect(
-					this._padding.left,
-					this._padding.top,
-					this.innerWidth,
-					this.innerHeight
-				)
+				graphics.drawRect(0, 0, width, height)
 				graphics.endFill()
 				if (this.handle.mask) {
 					this.handle.removeChild(this.handle.mask as Container)
@@ -132,8 +120,8 @@ export class ContainerElement<T extends ContainerElement = any> extends BaseElem
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 		this.handle.position.set(
-			this.innerLeft + this._scale * this._xPivot * width,
-			this.innerTop + this._scale * this._yPivot * height
+			this.pivotLeft,
+			this.pivotTop
 		)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
@@ -145,6 +133,6 @@ export default ContainerElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		container: {config: ContainerElementConfig, element: ContainerElement}
+		container: ContainerElementConfig
 	}
 }

@@ -1,42 +1,38 @@
 import { BaseTexture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
-import { BaseElement, BaseConstructorProperties, BaseConfig, BlendMode } from "./BaseElement.js"
-import type LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { ParticleContainer } from "./particles/ParticleContainer.js"
 
-export interface ParticleContainerElementConfig<T extends BaseElement = ParticleContainerElement> extends BaseConfig<T> {
+export interface ParticleContainerElementConfig extends BaseElementConfig<"container-particle", ParticleContainerElement> {
 	blendMode?: BlendMode
 	baseTexture?: string | BaseTexture
 }
 
-export class ParticleContainerElement extends BaseElement<ParticleContainerElement> {
-	declare public handle: ParticleContainer
-
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("container-particle", props => new this(props, new ParticleContainer()))
+export class ParticleContainerElement extends BaseElement<ParticleContainer> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("container-particle", config => new this(factory, config))
 	}
 
-	constructor(props: BaseConstructorProperties<ParticleContainerElementConfig>, handle: ParticleContainer) {
-		super(props, handle)
-		const config = props.config
-		if (config) {
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
-			if (config.baseTexture) {
-				this.baseTexture = config.baseTexture
-			}
+	private constructor(factory: PixiLayoutFactory, config: ParticleContainerElementConfig) {
+		super(factory, config, new ParticleContainer())
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
+		}
+		if (config.baseTexture) {
+			this.baseTexture = config.baseTexture
 		}
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
+		const width = this.computedWidth
+		const height = this.computedHeight
 		if (this.handle.interactive) {
-			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.width * this._xPivot, this.height * this._yPivot)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 	}
@@ -60,6 +56,6 @@ export class ParticleContainerElement extends BaseElement<ParticleContainerEleme
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"container-particle": {config: ParticleContainerElementConfig, element: ParticleContainerElement}
+		"container-particle": ParticleContainerElementConfig
 	}
 }

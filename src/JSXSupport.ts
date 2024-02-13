@@ -1,9 +1,9 @@
 import type { ElementTypes } from "./ElementTypes.js"
-import type{ BaseConfig } from "./BaseElement.js"
-import type { LayoutElementJson } from "./LayoutFactory"
+import type { BaseElementConfig } from "./BaseElement.js"
+import type { PixiElementConfig } from "./PixiLayoutFactory"
 
 type LayoutElementProps = {
-	[K in keyof ElementTypes]: ElementTypes[K]["config"] & {children?: ReactNode}
+	[K in keyof ElementTypes]: Omit<ElementTypes[K], "type" | "children"> & {children?: ReactNode}
 }
 
 export namespace JSX {
@@ -11,11 +11,7 @@ export namespace JSX {
 	export interface ElementChildrenAttribute {
 		children: {}
 	}
-	export interface Element {
-		type: keyof ElementTypes
-		config?: BaseConfig
-		children?: Element[]
-	}
+	export interface Element extends BaseElementConfig {}
 }
 
 interface ReactNodeArray extends Array<ReactNode> {}
@@ -40,11 +36,11 @@ export function Slot(props: {name: string, children?: ReactNode}) {
 }
 
 export function isFragment(data: JSX.Element) {
-	return (data.type as string) == "jsx-fragment"
+	return data.type == "jsx-fragment"
 }
 
 export function toArray(data: JSX.Element) {
-	return (data.type as string == "jsx-fragment" ? data.children! : [data]) as LayoutElementJson[]
+	return (data.type == "jsx-fragment" ? data.children! : [data]) as PixiElementConfig[]
 }
 
 export function createElement<T extends IntrinsicElementNames | ComponentFunction>(type: T, props: ComponentProps<T>, ...rawChildren: ReactNode[]) {
@@ -57,21 +53,20 @@ export function createElement<T extends IntrinsicElementNames | ComponentFunctio
 			const item = array[j] as JSX.Element
 			if (!item) {
 				continue
-			} else if ((item.type as string) == "jsx-fragment") {
+			} else if (item.type == "jsx-fragment") {
 				children.push(...item.children!)
-			} else if ((item.type as string) == "jsx-slot") {
-				slots[item.config!.name!] = item.children
+			} else if (item.type == "jsx-slot") {
+				slots[item.name!] = item.children
 			} else {
 				children.push(item)
 			}
 		}
 	}
 	if (typeof type == "string") {
-		return {
-			type,
-			children,
-			config: props
-		} as JSX.Element
+		const result = props as PixiElementConfig
+		result.type = type
+		result.children = children as PixiElementConfig[]
+		return result
 	} else {
 		return type({children, ...props}, slots)
 	}

@@ -1,10 +1,10 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { Texture } from "@pixi/core"
 import { TilingSprite } from "@pixi/sprite-tiling"
 
-export interface TiledSpriteElementConfig<T extends TiledSpriteElement = TiledSpriteElement> extends BaseConfig<T> {
+export interface TiledSpriteElementConfig extends BaseElementConfig<"sprite-tiled", TiledSpriteElement> {
 	image?: Texture | string
 	tint?: number
 	scaling?: "width" | "height" | "none"
@@ -13,35 +13,30 @@ export interface TiledSpriteElementConfig<T extends TiledSpriteElement = TiledSp
 	blendMode?: BlendMode
 }
 
-export class TiledSpriteElement extends BaseElement<TiledSpriteElement> {
-	declare public readonly handle: TilingSprite
-
+export class TiledSpriteElement extends BaseElement<TilingSprite> {
 	private _scaling: "width" | "height" | "none"
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite-tiled", props => new this(props, new TilingSprite(props.factory.resolveAsset(props.config?.image))))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("sprite-tiled", config => new this(factory, config, new TilingSprite(factory.resolveAsset(config.image))))
 	}
 
-	protected constructor(props: BaseConstructorProperties<TiledSpriteElementConfig<any>>, handle: TilingSprite) {
-		super(props, handle)
-		const config = props.config
+	protected constructor(factory: PixiLayoutFactory, config: TiledSpriteElementConfig, handle: TilingSprite) {
+		super(factory, config, handle)
 		this._scaling = "none"
-		if (config) {
-			if (config.tint !== undefined) {
-				this.handle.tint = config.tint
-			}
-			if (config.scaling) {
-				this._scaling = config.scaling
-			}
-			if (config.clampMargin !== undefined) {
-				this.clampMargin = config.clampMargin
-			}
-			if (config.roundPixels !== undefined) {
-				this.handle.roundPixels = config.roundPixels
-			}
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
+		if (config.tint !== undefined) {
+			this.handle.tint = config.tint
+		}
+		if (config.scaling) {
+			this._scaling = config.scaling
+		}
+		if (config.clampMargin !== undefined) {
+			this.clampMargin = config.clampMargin
+		}
+		if (config.roundPixels !== undefined) {
+			this.handle.roundPixels = config.roundPixels
+		}
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
 		}
 	}
 
@@ -99,24 +94,23 @@ export class TiledSpriteElement extends BaseElement<TiledSpriteElement> {
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 		let scale = 1
 		if (this.scaling == "width") {
-			scale = this.innerWidth / this.handle.texture.width
+			scale = this.computedWidth / this.handle.texture.width
 			this.handle.scale.set(scale * this._scale)
 			this.handle.width = this.handle.texture.width
-			this.handle.height = this.innerHeight / scale
+			this.handle.height = this.computedHeight / scale
 		} else if (this.scaling == "height") {
-			scale = this.innerHeight / this.handle.texture.height
+			scale = this.computedHeight / this.handle.texture.height
 			this.handle.scale.set(scale * this._scale)
-			this.handle.width = this.innerWidth / scale
+			this.handle.width = this.computedWidth / scale
 			this.handle.height = this.handle.texture.height
 		} else {
 			this.handle.scale.set(this._scale)
-			this.handle.width = this.innerWidth
-			this.handle.height = this.innerHeight
+			this.handle.width = this.computedWidth
+			this.handle.height = this.computedHeight
 		}
 		this.applyFlip()
 	}
@@ -134,6 +128,6 @@ export default TiledSpriteElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"sprite-tiled": {config: TiledSpriteElementConfig, element: TiledSpriteElement}
+		"sprite-tiled": TiledSpriteElementConfig
 	}
 }

@@ -1,9 +1,9 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { SdfText, SdfTextStyle } from "./sdfText/index.js"
 import { Rectangle } from "@pixi/math"
 
-export interface SdfTextElementConfig<T extends SdfTextElement = SdfTextElement> extends BaseConfig<T> {
+export interface SdfTextElementConfig extends BaseElementConfig<"text-sdf", SdfTextElement> {
 	text?: string
 	fit?: boolean
 	verticalAlign?: "top" | "bottom" | "middle"
@@ -14,58 +14,53 @@ export interface SdfTextElementConfig<T extends SdfTextElement = SdfTextElement>
 	style?: Partial<SdfTextStyle>
 }
 
-export class SdfTextElement extends BaseElement<SdfTextElement> {
-	declare public readonly handle: SdfText
-
+export class SdfTextElement extends BaseElement<SdfText> {
 	private _fit: boolean
 	private _verticalAlign: "top" | "bottom" | "middle" | "baseline"
 	private _horizontalAlign: "left" | "right" | "center"
 	private _lastSize: [number, number]
 	private _wordWrap: boolean
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("text-sdf", props => new this(props, new SdfText()))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("text-sdf", config => new this(factory, config))
 	}
 
-	protected constructor(props: BaseConstructorProperties<SdfTextElementConfig<any>>, handle: SdfText) {
-		super(props, handle)
+	protected constructor(factory: PixiLayoutFactory, config: SdfTextElementConfig) {
+		super(factory, config, new SdfText())
 		this._fit = false
 		this._verticalAlign = "top"
 		this._horizontalAlign = "left"
 		this._lastSize = [0, 0]
 		this._wordWrap = false
-		const config = props.config
-		if (config) {
-			if (config.style) {
-				this.handle.updateStyle(config.style)
-			}
-			if (config.text) {
-				this.handle.text = config.text
-			}
-			if (config.fit) {
-				this._fit = true
-			}
-			if (config.verticalAlign) {
-				this._verticalAlign = config.verticalAlign
-			}
-			if (config.horizontalAlign) {
-				this._horizontalAlign = config.horizontalAlign
-			}
-			if (config.wordWrap) {
-				this._wordWrap = true
-			}
-			if (config.flush !== undefined) {
-				this.handle.flush = config.flush
-			}
-			if (config.forceBatch !== undefined) {
-				this.handle.flush = config.forceBatch
-			}
+		if (config.style) {
+			this.handle.updateStyle(config.style)
+		}
+		if (config.text) {
+			this.handle.text = config.text
+		}
+		if (config.fit) {
+			this._fit = true
+		}
+		if (config.verticalAlign) {
+			this._verticalAlign = config.verticalAlign
+		}
+		if (config.horizontalAlign) {
+			this._horizontalAlign = config.horizontalAlign
+		}
+		if (config.wordWrap) {
+			this._wordWrap = true
+		}
+		if (config.flush !== undefined) {
+			this.handle.flush = config.flush
+		}
+		if (config.forceBatch !== undefined) {
+			this.handle.flush = config.forceBatch
 		}
 	}
 
 	public get contentHeight() {
-		if (this._wordWrap && this.widthReady) {
-			this.handle.wordWrapWidth = this.innerWidth
+		if (this._wordWrap) {
+			this.handle.wordWrapWidth = this.computedWidth
 		} else {
 			this.handle.wordWrapWidth = 0
 		}
@@ -73,8 +68,8 @@ export class SdfTextElement extends BaseElement<SdfTextElement> {
 	}
 
 	public get contentWidth() {
-		if (this._wordWrap && this.widthReady) {
-			this.handle.wordWrapWidth = this.innerWidth
+		if (this._wordWrap) {
+			this.handle.wordWrapWidth = this.computedWidth
 		} else {
 			this.handle.wordWrapWidth = 0
 		}
@@ -195,9 +190,8 @@ export class SdfTextElement extends BaseElement<SdfTextElement> {
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		const width = this.innerWidth
-		const height = this.innerHeight
+		const width = this.computedWidth
+		const height = this.computedHeight
 		this.handle.wordWrapWidth = this._wordWrap ? width : 0
 		this.handle.fontScale = 1
 		if (this.handle.dirty || width != this._lastSize[0] || height != this._lastSize[1]) {
@@ -232,14 +226,12 @@ export class SdfTextElement extends BaseElement<SdfTextElement> {
 		this.handle.pivot.set(width * this._xPivot - left, height * this._yPivot - top)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
-		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
 	}
 }
 
-export default SdfTextElement
-
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"text-sdf": {config: SdfTextElementConfig, element: SdfTextElement}
+		"text-sdf": SdfTextElementConfig
 	}
 }

@@ -1,36 +1,32 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties, BlendMode } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { Graphics } from "@pixi/graphics"
 import { Rectangle } from "@pixi/math"
+import { LayoutElementCallback } from "@md5crypt/layout"
 
-export interface GraphicElementConfig<T extends BaseElement = GraphicElement> extends BaseConfig<T> {
-	onDraw?: (self: GraphicElement) => void
+export interface GraphicElementConfig extends BaseElementConfig<"graphic", GraphicElement> {
+	onDraw?: LayoutElementCallback<GraphicElement>
 	blendMode?: BlendMode
 	autoClear?: boolean
 }
 
-export class GraphicElement extends BaseElement<GraphicElement> {
-	declare public readonly handle: Graphics
+export class GraphicElement extends BaseElement<Graphics> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("graphic", config => new this(factory, config))
+	}
 
 	private _onDraw?: (self: GraphicElement) => void
 	public autoClear: boolean
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("graphic", props => new this(props, new Graphics()))
-	}
-
-	protected constructor(props: BaseConstructorProperties<GraphicElementConfig<any>>, handle: Graphics) {
-		super(props, handle)
+	private constructor(factory: PixiLayoutFactory, config: GraphicElementConfig) {
+		super(factory, config, new Graphics())
 		this.autoClear = true
-		const config = props.config
-		if (config) {
-			this._onDraw = config.onDraw
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
-			if (config.autoClear !== undefined) {
-				this.autoClear = config.autoClear
-			}
+		this._onDraw = config.onDraw
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
+		}
+		if (config.autoClear !== undefined) {
+			this.autoClear = config.autoClear
 		}
 	}
 
@@ -52,12 +48,13 @@ export class GraphicElement extends BaseElement<GraphicElement> {
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
+		const width = this.computedWidth
+		const height = this.computedHeight
 		if (this.handle.interactive) {
-			this.handle.hitArea = new Rectangle(0, 0, this.width, this.height)
+			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.computedLeft, this.computedTop)
-		this.handle.pivot.set(this.width * this._xPivot, this.height * this._yPivot)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
 		if (this.autoClear) {
@@ -73,6 +70,6 @@ export default GraphicElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		graphic: {config: GraphicElementConfig, element: BaseElement}
+		graphic: GraphicElementConfig
 	}
 }

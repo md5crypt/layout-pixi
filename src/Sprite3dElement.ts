@@ -1,50 +1,48 @@
 
-import type LayoutFactory from "./LayoutFactory.js"
+import type { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { Sprite3d } from "./projection/proj3d/Sprite3d.js"
 import { Rectangle } from "@pixi/math"
 import { Texture } from "@pixi/core"
-import { BaseElement, BaseConfig, BlendMode, BaseConstructorProperties } from "./BaseElement.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
 
-export interface Sprite3dElementConfig<T extends Sprite3dElement = Sprite3dElement> extends BaseConfig<T> {
+export interface Sprite3dElementConfig extends BaseElementConfig<"sprite-3d", Sprite3dElement> {
 	image?: Texture | string
 	backImage?: Texture | string
 	tint?: number
 	blendMode?: BlendMode
 }
 
-export class Sprite3dElement<T extends Sprite3dElement = any> extends BaseElement<T> {
-	declare public handle: Sprite3d
+export class Sprite3dElement extends BaseElement<Sprite3d> {
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("sprite-3d", props => new this(props, new Sprite3d(props.factory.resolveAsset(props.config?.image))))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("sprite-3d", config => new this(factory, config))
 	}
 
-	protected constructor(props: BaseConstructorProperties<Sprite3dElementConfig<any>>, handle: Sprite3d) {
-		super(props, handle)
-		handle.anchor.set(0, 0)
-		const config = props.config
-		if (config) {
-			if (config.tint !== undefined) {
-				this.handle.tint = config.tint
-			}
-			if (config.blendMode !== undefined) {
-				this.handle.blendMode = config.blendMode as number
-			}
-			if (config.backImage) {
-				this.handle.backTexture = props.factory.resolveAsset(config.backImage)
-			}
+	protected constructor(factory: PixiLayoutFactory, config: Sprite3dElementConfig) {
+		super(factory, config, new Sprite3d(factory.resolveAsset(config.image)))
+		this.handle.anchor.set(0, 0)
+		if (config.tint !== undefined) {
+			this.handle.tint = config.tint
+		}
+		if (config.blendMode !== undefined) {
+			this.handle.blendMode = config.blendMode as number
+		}
+		if (config.backImage) {
+			this.handle.backTexture = factory.resolveAsset(config.backImage)
 		}
 	}
 
 	protected onUpdate() {
-		super.onUpdate()
-		const innerWidth = this.innerWidth
-		const innerHeight = this.innerHeight
+		const computedWidth = this.computedWidth
+		const computedHeight = this.computedHeight
 		const texture = this.handle.texture
-		this.handle.scale.set(innerWidth / texture.width * this._scale, innerHeight / texture.height * this._scale)
+		this.handle.scale.set(
+			computedWidth / texture.width * this._scale,
+			computedHeight / texture.height * this._scale
+		)
 		this.applyFlip()
-		this.handle.position.set(this.computedLeft, this.computedTop)
+		this.handle.position.set(this.pivotLeft, this.pivotTop)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(
@@ -148,6 +146,6 @@ export default Sprite3dElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"sprite-3d": {config: Sprite3dElementConfig, element: Sprite3dElement}
+		"sprite-3d": Sprite3dElementConfig
 	}
 }

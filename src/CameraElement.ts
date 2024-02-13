@@ -1,7 +1,6 @@
 import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
-import { BaseConstructorProperties } from "./BaseElement.js"
 
-import type LayoutFactory from "./LayoutFactory.js"
+import type { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { Camera3d } from "./projection/proj3d/Camera3d.js"
 
@@ -12,41 +11,39 @@ interface PlaneConfig {
 	orthographic: boolean
 }
 
-export interface CameraElementConfig extends ContainerElementConfig<CameraElement>, Partial<PlaneConfig> {
+export interface CameraElementConfig extends ContainerElementConfig<"camera", CameraElement>, Partial<PlaneConfig> {
 	position3d?: {x?: number, y?: number, z?: number}
 }
 
-export class CameraElement extends ContainerElement<CameraElement> {
-	declare public handle: Camera3d
+export class CameraElement extends ContainerElement<Camera3d> {
 	private planeConfig: PlaneConfig
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("camera", props => new this(props, new Camera3d()))
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("camera", props => new this(factory, props))
 	}
 
-	constructor(props: BaseConstructorProperties<CameraElementConfig>, handle: Camera3d) {
-		super(props, handle)
+	private constructor(factory: PixiLayoutFactory, config: CameraElementConfig) {
+		super(factory, config, new Camera3d())
 		this.planeConfig = {
 			focus: 400,
 			near: 10,
 			far: 1000,
 			orthographic: false
 		}
-		if (props.config) {
-			if (props.config.focus !== undefined) {
-				this.planeConfig.focus = props.config.focus
-			}
-			if (props.config.near !== undefined) {
-				this.planeConfig.near = props.config.near
-			}
-			if (props.config.far !== undefined) {
-				this.planeConfig.far = props.config.far
-			}
-			if (props.config.orthographic !== undefined) {
-				this.planeConfig.orthographic = props.config.orthographic
-			}
-			this.updatePlanes()
+
+		if (config.focus !== undefined) {
+			this.planeConfig.focus = config.focus
 		}
+		if (config.near !== undefined) {
+			this.planeConfig.near = config.near
+		}
+		if (config.far !== undefined) {
+			this.planeConfig.far = config.far
+		}
+		if (config.orthographic !== undefined) {
+			this.planeConfig.orthographic = config.orthographic
+		}
+		this.updatePlanes()
 	}
 
 	public set focus(value: number) {
@@ -121,7 +118,7 @@ export class CameraElement extends ContainerElement<CameraElement> {
 
 	protected onUpdate() {
 		super.onUpdate()
-		const scale = this.scale
+		const scale = this._scale
 		this.handle.position.x += this.handle.position3d.x * scale
 		this.handle.position.y += this.handle.position3d.y * scale
 	}
@@ -131,6 +128,6 @@ export default CameraElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"camera": {config: CameraElementConfig, element: CameraElement}
+		"camera": CameraElementConfig
 	}
 }

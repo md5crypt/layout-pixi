@@ -10,7 +10,12 @@ export class HtmlOverlay extends DisplayObject {
 	public static prune() {
 		for (const item of this._attached) {
 			if (item._paint != this._paint) {
-				item.detach()
+				if (item.persistent) {
+					item._enabled = false
+					item._htmlRoot.style.display = "none"
+				} else {
+					item.detach()
+				}
 			}
 		}
 		this._paint += 1
@@ -18,6 +23,8 @@ export class HtmlOverlay extends DisplayObject {
 
 	// pixi types require this
 	public sortDirty!: boolean
+
+	public persistent: boolean
 
 	private _htmlRoot: HTMLDivElement
 
@@ -42,6 +49,7 @@ export class HtmlOverlay extends DisplayObject {
 	private _interactiveChildren: boolean
 
 	private _paint: number
+	private _enabled: boolean
 
 	constructor() {
 		super()
@@ -50,7 +58,8 @@ export class HtmlOverlay extends DisplayObject {
 			position: "absolute",
 			top: "0",
 			left: "0",
-			transformOrigin: "0px 0px 0px"
+			transformOrigin: "0px 0px 0px",
+			display: "none"
 		})
 		const shadowRoot = this._htmlRoot.attachShadow({mode: "closed"})
 		this._styleElement = document.createElement("style")
@@ -71,6 +80,8 @@ export class HtmlOverlay extends DisplayObject {
 		this._content = ""
 		this._interactiveChildren = true
 		this._paint = 0
+		this.persistent = false
+		this._enabled = false
 	}
 
 	public calculateBounds() {
@@ -83,7 +94,6 @@ export class HtmlOverlay extends DisplayObject {
 
 	public render(renderer: Renderer) {
 		if (!this.visible || this.worldAlpha <= 0 || !this.renderable) {
-			this.detach()
 			return
 		}
 
@@ -122,13 +132,22 @@ export class HtmlOverlay extends DisplayObject {
 			this._contentElement.innerHTML = this._content
 		}
 
+		if (!this._enabled) {
+			this._enabled = true
+			style.removeProperty("display")
+		}
+
+		this.attach(renderer)
+
+		this._paint = HtmlOverlay._paint
+	}
+	
+	public attach(renderer: Renderer) {
 		if (!this._attached) {
 			this._attached = true
 			renderer.view.parentNode!.appendChild(this._htmlRoot)
 			HtmlOverlay._attached.add(this)
 		}
-
-		this._paint = HtmlOverlay._paint
 	}
 
 	public detach() {
@@ -195,7 +214,7 @@ export class HtmlOverlay extends DisplayObject {
 		if (this._interactiveChildren != value) {
 			this._interactiveChildren = value
 			if (value) {
-				this._htmlRoot.style.removeProperty("pointerEvents")
+				this._htmlRoot.style.removeProperty("pointer-events")
 			} else {
 				this._htmlRoot.style.pointerEvents = "none"
 			}

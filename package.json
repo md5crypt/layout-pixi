@@ -1,6 +1,6 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "1.4.9",
+	"version": "2.0.0",
 	"description": "pixi support for @md5crypt/layout",
 	"main": "lib/index.js",
 	"types": "lib",
@@ -69,15 +69,8 @@
 		"layout",
 		"pixi.js"
 	],
-	"devDependencies": {
-		"@types/node": "^17.0.23",
-		"@typescript-eslint/eslint-plugin": "^5.17.0",
-		"@typescript-eslint/parser": "^5.17.0",
-		"eslint": "^8.12.0",
-		"typescript": "^4.8.3"
-	},
 	"peerDependencies": {
-		"@md5crypt/layout": "^1.2.4",
+		"@md5crypt/layout": "^2.0.0",
 		"@pixi/core": "^6.5.0",
 		"@pixi/display": "^6.5.0",
 		"@pixi/extensions": "^6.5.0",
@@ -87,5 +80,11 @@
 		"@pixi/sprite-tiling": "^6.5.0",
 		"@pixi/text": "^6.5.0",
 		"@pixi/text-bitmap": "^6.5.0"
+	},
+	"dependencies": {
+		"@typescript-eslint/eslint-plugin": "^6.19.1",
+		"@typescript-eslint/parser": "^6.19.1",
+		"eslint": "^8.56.0",
+		"typescript": "^5.3.3"
 	}
 }

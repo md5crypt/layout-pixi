@@ -1,8 +1,7 @@
-import { LayoutElement, LayoutElementConfig, LayoutElementConstructorProperties } from "@md5crypt/layout"
+import { LayoutElement, LayoutElementConfig } from "@md5crypt/layout"
 import { DisplayObject } from "@pixi/display"
 import type { PixiEvent, PixiEventType } from "./events"
-
-import { LayoutFactory, LayoutElementJson } from "./LayoutFactory.js"
+import { PixiLayoutFactory, PixiElementConfig } from "./PixiLayoutFactory"
 
 export const enum BlendMode {
 	NORMAL = 0,
@@ -11,7 +10,8 @@ export const enum BlendMode {
 	SCREEN = 3
 }
 
-export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends LayoutElementConfig<T> {
+export interface BaseElementConfig<TYPE extends string = string, SELF extends BaseElement = any> extends LayoutElementConfig<PixiElementConfig, SELF> {
+	type: TYPE
 	scale?: number
 	zIndex?: number
 	alpha?: number
@@ -19,83 +19,57 @@ export interface BaseConfig<T extends BaseElement<T> = BaseElement> extends Layo
 	flipped?: false | "vertical" | "horizontal"
 	interactive?: boolean
 	noPropagation?: boolean
-	anchor?: [number, number] | number
 	pivot?: [number, number] | number
 	buttonMode?: boolean
 }
 
-export interface BaseConstructorProperties<T extends LayoutElementConfig> extends LayoutElementConstructorProperties<T> {
-	factory: LayoutFactory
-}
-
-export abstract class BaseElement<T extends BaseElement = any> extends LayoutElement<LayoutElementJson, BaseElement, T> {
-	declare public readonly factory: LayoutFactory
-
-	public readonly handle: DisplayObject
-	private _hidden: boolean
-	protected _xAnchor: number
-	protected _yAnchor: number
+export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> extends LayoutElement<PixiElementConfig, BaseElement> {
+	declare public readonly config: Readonly<BaseElementConfig>
+	declare public readonly factory: PixiLayoutFactory
+	
+	public readonly handle: HANDLE
 	protected _xPivot: number
 	protected _yPivot: number
 	protected _flipped: "vertical" | "horizontal" | false
 
-	protected constructor(props: BaseConstructorProperties<BaseConfig<T>>, handle: DisplayObject) {
-		super(props)
+	protected constructor(factory: PixiLayoutFactory, config: Readonly<BaseElementConfig>, handle: HANDLE) {
+		super(factory, config)
 		this.handle = handle
-		this._hidden = false
 		this._flipped = false
-		this._xAnchor = 0
-		this._yAnchor = 0
 		this._xPivot = 0.5
 		this._yPivot = 0.5
-
-		const config = props.config
-		if (config) {
-			if (config.enabled === false) {
-				this.handle.visible = false
+		if (config.enabled === false) {
+			this.handle.visible = false
+		}
+		if (config.zIndex) {
+			this.handle.zIndex = config.zIndex
+		}
+		if (config.interactive) {
+			this.interactive = true
+		}
+		if (config.noPropagation) {
+			this.noPropagation = true
+		}
+		if (config.alpha !== undefined) {
+			this.alpha = config.alpha
+		}
+		if (config.rotation) {
+			this.rotation = config.rotation
+		}
+		if (config.flipped) {
+			this.flipped = config.flipped
+		}
+		if (config.pivot) {
+			if (Array.isArray(config.pivot)) {
+				this._xPivot = config.pivot[0]
+				this._yPivot = config.pivot[1]
+			} else {
+				this._xPivot = config.pivot
+				this._yPivot = config.pivot
 			}
-			if (config.zIndex) {
-				this.handle.zIndex = config.zIndex
-			}
-			if (config.interactive) {
-				this.interactive = true
-			}
-			if (config.noPropagation) {
-				this.noPropagation = true
-			}
-			if (config.alpha !== undefined) {
-				this.alpha = config.alpha
-			}
-			if (config.rotation) {
-				this.rotation = config.rotation
-			}
-			if (config.flipped) {
-				this.flipped = config.flipped
-			}
-			if (config.scale) {
-				this._scale = config.scale
-			}
-			if (config.anchor) {
-				if (Array.isArray(config.anchor)) {
-					this._xAnchor = config.anchor[0]
-					this._yAnchor = config.anchor[1]
-				} else {
-					this._xAnchor = config.anchor
-					this._yAnchor = config.anchor
-				}
-			}
-			if (config.pivot) {
-				if (Array.isArray(config.pivot)) {
-					this._xPivot = config.pivot[0]
-					this._yPivot = config.pivot[1]
-				} else {
-					this._xPivot = config.pivot
-					this._yPivot = config.pivot
-				}
-			}
-			if (config.buttonMode !== undefined) {
-				this.handle.buttonMode = config.buttonMode
-			}
+		}
+		if (config.buttonMode !== undefined) {
+			this.handle.buttonMode = config.buttonMode
 		}
 	}
 
@@ -113,20 +87,43 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		}
 	}
 
-	public get innerTop() {
-		let top = super.innerTop
-		if (this._yAnchor) {
-			top -= this._yAnchor * this._scale * this.height
-		}
-		return top
+	protected get pivotLeft() {
+		return this.computedLeft + this._scale * this._xPivot * this.computedWidth
 	}
 
-	public get innerLeft() {
-		let left = super.innerLeft
-		if (this._xAnchor) {
-			left -= this._xAnchor * this._scale * this.width
+	protected get pivotTop() {
+		return this.computedTop + this._scale * this._yPivot * this.computedHeight
+	}
+
+	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, callback: (event: PixiEvent) => void): void
+	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void) {
+		if (arg2 === undefined) {
+			this.handle.on(event, arg1 as any)
+		} else {
+			const elements = Array.isArray(arg1) ? arg1 : [arg1] as string[]
+			for (const element of elements ) {
+				this.getElement(element).on(event, arg2 as any)
+			}
 		}
-		return left
+	}
+
+	public setPivot(x: number, y?: number) {
+		this.xPivot = x
+		this.yPivot = y !== undefined ? y : x
+	}
+
+	public get enabled() {
+		return this._enabled
+	}
+
+	public set enabled(value: boolean) {
+		if (this._enabled != value) {
+			this.handle.visible = value
+			this._enabled = value
+			this._dirty = true
+		}
 	}
 
 	public get zIndex() {
@@ -142,8 +139,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	}
 
 	public set alpha(value: number) {
-		this._hidden = value === 0
-		this.handle.visible = this.enabled && value !== 0
 		this.handle.alpha = value
 	}
 
@@ -162,7 +157,7 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	public set flipped(value: false | "vertical" | "horizontal") {
 		if (this._flipped != value) {
 			this._flipped = value
-			this.setDirty()
+			this._dirty = true
 		}
 	}
 
@@ -182,61 +177,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 		this.handle.interactiveChildren = !value
 	}
 
-	public get anchor() {
-		return [this._xAnchor, this.yAnchor] as Readonly<[number, number]>
-	}
-
-	public set anchor(value: Readonly<[number, number]>) {
-		if (this._xAnchor != value[0] || this._yAnchor != value[1]) {
-			this._xAnchor = value[0]
-			this._yAnchor = value[1]
-			this.setDirty()
-		}
-	}
-
-	public get xAnchor() {
-		return this._xAnchor
-	}
-
-	public set xAnchor(value: number) {
-		if (this._xAnchor != value) {
-			this._xAnchor = value
-			this.setDirty()
-		}
-	}
-
-	public get yAnchor() {
-		return this._yAnchor
-	}
-
-	public set yAnchor(value: number) {
-		if (this._yAnchor != value) {
-			this._yAnchor = value
-			this.setDirty()
-		}
-	}
-
-	public setAnchor(x: number, y?: number) {
-		const yValue = y === undefined ? x : y
-		if (this._xAnchor != x || this._yAnchor != yValue) {
-			this._xAnchor = x
-			this._yAnchor = yValue
-			this.setDirty()
-		}
-	}
-
-	public get pivot() {
-		return [this._xPivot, this.yPivot] as Readonly<[number, number]>
-	}
-
-	public set pivot(value: Readonly<[number, number]>) {
-		if (this._xPivot != value[0] || this._yPivot != value[1]) {
-			this._xPivot = value[0]
-			this._yPivot = value[1]
-			this.setDirty()
-		}
-	}
-
 	public get xPivot() {
 		return this._xPivot
 	}
@@ -244,7 +184,7 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	public set xPivot(value: number) {
 		if (this._xPivot != value) {
 			this._xPivot = value
-			this.setDirty()
+			this._dirty = true
 		}
 	}
 
@@ -255,16 +195,7 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 	public set yPivot(value: number) {
 		if (this._yPivot != value) {
 			this._yPivot = value
-			this.setDirty()
-		}
-	}
-
-	public setPivot(x: number, y?: number) {
-		const yValue = y === undefined ? x : y
-		if (this._xPivot != x || this._yPivot != yValue) {
-			this._xPivot = x
-			this._yPivot = yValue
-			this.setDirty()
+			this._dirty = true
 		}
 	}
 
@@ -274,36 +205,6 @@ export abstract class BaseElement<T extends BaseElement = any> extends LayoutEle
 
 	public set buttonMode(value: boolean) {
 		this.handle.buttonMode = value
-	}
-
-	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void) {
-		if (arg2 === undefined) {
-			this.handle.on(event, arg1 as any)
-		} else {
-			const elements = Array.isArray(arg1) ? arg1 : [arg1] as string[]
-			for (const element of elements ) {
-				this.getElement(element).on(event, arg2 as any)
-			}
-		}
-	}
-
-	protected get computedLeft() {
-		return this.innerLeft + this._scale * this._xPivot * this.innerWidth
-	}
-
-	protected get computedTop() {
-		return this.innerTop + this._scale * this._yPivot * this.innerHeight
-	}
-
-	protected onDisable() {
-		this.handle.visible = false
-	}
-
-	protected onUpdate() {
-		this.handle.visible = this._enabled && !this._hidden
 	}
 }
 

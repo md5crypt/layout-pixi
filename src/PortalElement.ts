@@ -1,5 +1,5 @@
-import { BaseElement, BaseConfig, BaseConstructorProperties } from "./BaseElement.js"
-import LayoutFactory from "./LayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 
 import { DisplayObject } from "@pixi/display"
 import { Renderer } from "@pixi/core"
@@ -67,36 +67,25 @@ class PortalContainer extends DisplayObject {
 	}
 }
 
-declare module "./ElementTypes" {
-	export interface ElementTypes {
-		"portal": {config: PortalElementConfig, element: PortalElement}
-	}
-}
-
-export interface PortalElementConfig extends BaseConfig<PortalElement> {
+export interface PortalElementConfig extends BaseElementConfig<"portal", PortalElement> {
 	objects: string | string[]
 	alphaControl?: boolean
 }
 
-export class PortalElement extends BaseElement {
-	declare public handle: PortalContainer
-
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("portal", props => new this(props, new PortalContainer()))
+export class PortalElement extends BaseElement<PortalContainer> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("portal", config => new this(factory, config))
 	}
 
-	constructor(props: BaseConstructorProperties<PortalElementConfig>, handle: PortalContainer) {
-		super(props, handle)
-		const config = props.config
-		if (config) {
-			this.handle.alphaControl = config.alphaControl || false
-			if (config.objects) {
-				this.onAttachCallback = () => {
-					if (typeof config.objects == "string") {
-						this.add(this.parent.getElement(config.objects))
-					} else {
-						config.objects.forEach(x => this.parent.getElement(x))
-					}
+	private constructor(factory: PixiLayoutFactory, config: PortalElementConfig) {
+		super(factory, config, new PortalContainer())
+		this.handle.alphaControl = config.alphaControl || false
+		if (config.objects) {
+			this.onAttachCallback = () => {
+				if (typeof config.objects == "string") {
+					this.add(this.parent.getElement(config.objects))
+				} else {
+					config.objects.forEach(x => this.parent.getElement(x))
 				}
 			}
 		}
@@ -116,5 +105,11 @@ export class PortalElement extends BaseElement {
 
 	public set alphaControl(value: boolean) {
 		this.handle.alphaControl = value
+	}
+}
+
+declare module "./ElementTypes" {
+	export interface ElementTypes {
+		"portal": PortalElementConfig
 	}
 }

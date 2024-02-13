@@ -1,11 +1,10 @@
-import LayoutFactory from "./LayoutFactory.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
 import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
 
 import { Container } from "@pixi/display"
 import { Renderer, RenderTexture, AbstractRenderer } from "@pixi/core"
 import { Sprite } from "@pixi/sprite"
 import { Matrix } from "@pixi/math"
-import { BaseConstructorProperties } from "./BaseElement.js"
 
 class CacheableContainer extends Container {
 	public usePotTexture: boolean
@@ -72,38 +71,35 @@ class CacheableContainer extends Container {
 	}
 }
 
-export interface CacheableContainerConfig extends ContainerElementConfig<CacheableContainerElement> {
+export interface CacheableContainerElementConfig extends ContainerElementConfig<"container-cacheable", CacheableContainerElement> {
 	usePotTexture?: boolean
 	passthrough?: boolean
 	renderer?: AbstractRenderer
 }
 
-export class CacheableContainerElement extends ContainerElement<CacheableContainerElement> {
-	declare public handle: CacheableContainer
+export class CacheableContainerElement extends ContainerElement<CacheableContainer> {
+	public static register(factory: PixiLayoutFactory) {
+		factory.register("container-cacheable", props => new this(factory, props))
+	}
+
 	private _cacheDirty = false
 	private _renderer: Renderer | null
 
-	constructor(props: BaseConstructorProperties<CacheableContainerConfig>, handle: CacheableContainer) {
-		super(props, handle)
+	private constructor(factory: PixiLayoutFactory, config: CacheableContainerElementConfig) {
+		super(factory, config, new CacheableContainer())
 		this._cacheDirty = false
 		this._renderer = null
-		const config = props.config
-		if (config) {
-			if (config.renderer) {
-				this._renderer = config.renderer as Renderer
-			}
-			if (config.passthrough !== undefined) {
-				this.handle.passthrough = config.passthrough
-			}
-			if (config.usePotTexture !== undefined) {
-				this.handle.usePotTexture = config.usePotTexture
-			}
+		if (config.renderer) {
+			this._renderer = config.renderer as Renderer
+		}
+		if (config.passthrough !== undefined) {
+			this.handle.passthrough = config.passthrough
+		}
+		if (config.usePotTexture !== undefined) {
+			this.handle.usePotTexture = config.usePotTexture
 		}
 	}
 
-	public static register(layoutFactory: LayoutFactory) {
-		layoutFactory.register("container-cacheable", props => new this(props, new CacheableContainer()))
-	}
 
 	public invalidate() {
 		this.setDirty()
@@ -151,6 +147,6 @@ export default CacheableContainerElement
 
 declare module "./ElementTypes" {
 	export interface ElementTypes {
-		"container-cacheable": {config: CacheableContainerConfig, element: CacheableContainerElement}
+		"container-cacheable": CacheableContainerElementConfig
 	}
 }
