@@ -1,5 +1,5 @@
-import { ParticlePool } from "./ParticlePool.js"
-import { ParticleEmitter } from "./ParticleEmitter.js"
+import { ParticlePool } from "./ParticlePool"
+import { ParticleEmitter } from "./ParticleEmitter"
 
 export class ParticleEmitterBehavior {
 	private _emitter!: ParticleEmitter

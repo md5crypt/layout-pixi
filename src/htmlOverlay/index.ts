@@ -1,1 +1,1 @@
-export * from "./HtmlOverlay.js"
+export * from "./HtmlOverlay"

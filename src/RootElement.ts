@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Container } from "@pixi/display"
 
 export interface RootElementConfig extends BaseElementConfig<"root", RootElement> {

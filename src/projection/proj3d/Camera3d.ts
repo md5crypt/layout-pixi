@@ -1,5 +1,5 @@
 import { Container } from "@pixi/display"
-import { CameraTransform3d } from "./CameraTransform3d.js"
+import { CameraTransform3d } from "./CameraTransform3d"
 
 export class Camera3d extends Container {
 	declare transform: CameraTransform3d

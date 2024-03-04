@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Container } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
 
@@ -120,8 +120,8 @@ export class ContainerElement<HANDLE extends Container = Container> extends Base
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
 		this.handle.position.set(
-			this.pivotLeft,
-			this.pivotTop
+			this.pivotedLeft,
+			this.pivotedTop
 		)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)

@@ -1,10 +1,9 @@
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 
 import { Texture } from "@pixi/core"
 import { Rectangle, groupD8 } from "@pixi/math"
-import { PositioningBox } from "@md5crypt/layout"
-import { SpriteSliced } from "./9slice/index.js"
+import { SliceConfiguration, SpriteSliced } from "./9slice/index"
 
 type ScalingType = (
 	"none" | "clipped" | "contain" | "stretch" |
@@ -14,7 +13,7 @@ type ScalingType = (
 export interface SpriteElementConfig<TYPE extends string = "sprite", SELF extends SpriteElement = SpriteElement> extends BaseElementConfig<TYPE, SELF> {
 	image?: Texture | string
 	scaling?: ScalingType
-	slices?: PositioningBox
+	slices?: SliceConfiguration | number
 	verticalAlign?: "top" | "middle" | "bottom"
 	horizontalAlign?: "left" | "center" | "right"
 	tint?: number
@@ -224,29 +223,8 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 		}
 	}
 
-	public setSlices(slices: PositioningBox) {
-		const handle = this.handle
-		if (typeof slices == "number") {
-			handle.leftWidth = slices
-			handle.topHeight = slices
-			handle.rightWidth = slices
-			handle.bottomHeight = slices
-		} else {
-			if (slices.horizontal !== undefined) {
-				handle.leftWidth = slices.horizontal
-				handle.rightWidth = slices.horizontal
-			} else {
-				handle.leftWidth = slices.left || 0
-				handle.rightWidth = slices.right || 0
-			}
-			if (slices.vertical !== undefined) {
-				handle.topHeight = slices.vertical
-				handle.bottomHeight = slices.vertical
-			} else {
-				handle.topHeight = slices.top || 0
-				handle.bottomHeight = slices.bottom || 0
-			}
-		}
+	public setSlices(slices: SliceConfiguration | number) {
+		this.handle.setSliced(slices)
 	}
 
 	protected onUpdate() {
@@ -358,8 +336,8 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 		)
 		this.applyFlip()
 		this.handle.position.set(
-			this.pivotLeft + xOffset * this._scale,
-			this.pivotTop + this._scale * yOffset
+			this.pivotedLeft + xOffset * this._scale,
+			this.pivotedTop + this._scale * yOffset
 		)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 	}

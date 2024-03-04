@@ -1,8 +1,8 @@
 import { Transform } from "@pixi/math"
-import { Matrix3d } from "../Matrix3d.js"
-import { ObservableEuler } from "../ObservableEuler.js"
-import { ObservablePoint3d } from "../ObservablePoint3d.js"
-import { CameraTransform3d } from "./CameraTransform3d.js"
+import { Matrix3d } from "../Matrix3d"
+import { ObservableEuler } from "../ObservableEuler"
+import { ObservablePoint3d } from "../ObservablePoint3d"
+import { CameraTransform3d } from "./CameraTransform3d"
 
 export class Transform3d extends Transform {
 	public readonly localTransform3d: Matrix3d

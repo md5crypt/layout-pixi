@@ -1,6 +1,6 @@
 import { Renderer } from "@pixi/core"
 import { DisplayObject } from "@pixi/display"
-import { SdfTextRenderer } from "./SdfTextRenderer.js"
+import { SdfTextRenderer } from "./SdfTextRenderer"
 
 export class SdfTextFlushBarrier extends DisplayObject {
 	public sortDirty = false

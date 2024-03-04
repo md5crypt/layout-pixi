@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Text, TextStyle, TextMetrics, ITextStyle } from "@pixi/text"
 
 export interface TextElementConfig extends BaseElementConfig<"text", TextElement> {
@@ -333,7 +333,7 @@ export class TextElement extends BaseElement<Text> {
 		this.handle.pivot.set(width * this._xPivot - left, height * this._yPivot - top)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 	}
 }
 

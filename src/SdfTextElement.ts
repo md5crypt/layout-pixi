@@ -1,6 +1,6 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
-import { SdfText, SdfTextStyle } from "./sdfText/index.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
+import { SdfText, SdfTextStyle } from "./sdfText/index"
 import { Rectangle } from "@pixi/math"
 
 export interface SdfTextElementConfig extends BaseElementConfig<"text-sdf", SdfTextElement> {
@@ -226,7 +226,7 @@ export class SdfTextElement extends BaseElement<SdfText> {
 		this.handle.pivot.set(width * this._xPivot - left, height * this._yPivot - top)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 	}
 }
 

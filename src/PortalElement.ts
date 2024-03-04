@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 
 import { DisplayObject } from "@pixi/display"
 import { Renderer } from "@pixi/core"
@@ -68,7 +68,6 @@ class PortalContainer extends DisplayObject {
 }
 
 export interface PortalElementConfig extends BaseElementConfig<"portal", PortalElement> {
-	objects: string | string[]
 	alphaControl?: boolean
 }
 
@@ -80,15 +79,6 @@ export class PortalElement extends BaseElement<PortalContainer> {
 	private constructor(factory: PixiLayoutFactory, config: PortalElementConfig) {
 		super(factory, config, new PortalContainer())
 		this.handle.alphaControl = config.alphaControl || false
-		if (config.objects) {
-			this.onAttachCallback = () => {
-				if (typeof config.objects == "string") {
-					this.add(this.parent.getElement(config.objects))
-				} else {
-					config.objects.forEach(x => this.parent.getElement(x))
-				}
-			}
-		}
 	}
 
 	public add(element: BaseElement | DisplayObject) {

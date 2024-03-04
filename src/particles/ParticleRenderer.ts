@@ -2,8 +2,8 @@ import { Renderer, ObjectRenderer, Buffer, Geometry, State } from "@pixi/core"
 import { ExtensionMetadata, ExtensionType } from "@pixi/extensions"
 import { TYPES, DRAW_MODES } from "@pixi/constants"
 import { createIndicesForQuads, correctBlendMode } from "@pixi/utils"
-import { ParticleContainer } from "./ParticleContainer.js"
-import ParticleShader from "./ParticleShader.js"
+import { ParticleContainer } from "./ParticleContainer"
+import ParticleShader from "./ParticleShader"
 
 const enum CONST {
 	INDICES_PER_QUAD = 6,

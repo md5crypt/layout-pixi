@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { IBitmapTextStyle, BitmapText, BitmapFont, BitmapFontData } from "@pixi/text-bitmap"
 import { Texture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
@@ -279,8 +279,8 @@ export class BitmapTextElement extends BaseElement<BitmapText> {
 		this.lastSize[0] = width
 		this.lastSize[1] = height
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
-		let left = this.pivotLeft
-		let top = this.pivotTop
+		let left = this.pivotedLeft
+		let top = this.pivotedTop
 		if (this._verticalAlign == "middle") {
 			top += (height - this.contentHeight) * (this._scale / 2)
 		} else if (this._verticalAlign == "bottom") {

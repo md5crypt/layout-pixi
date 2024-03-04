@@ -1,8 +1,8 @@
 import { Renderer, Texture, BaseTexture } from "@pixi/core"
 import { DisplayObject } from "@pixi/display"
 import { BLEND_MODES } from "@pixi/constants"
-import { ParticlePool } from "./ParticlePool.js"
-import { ParticleRenderer } from "./ParticleRenderer.js"
+import { ParticlePool } from "./ParticlePool"
+import { ParticleRenderer } from "./ParticleRenderer"
 
 export class ParticleContainer extends DisplayObject {
 	public sortDirty: boolean

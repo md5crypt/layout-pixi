@@ -1,8 +1,8 @@
-import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
+import { ContainerElement, ContainerElementConfig } from "./ContainerElement"
 
-import type { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import type { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { Camera3d } from "./projection/proj3d/Camera3d.js"
+import { Camera3d } from "./projection/proj3d/Camera3d"
 
 interface PlaneConfig {
 	focus: number

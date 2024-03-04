@@ -1,2 +1,2 @@
-export * from "./EventSystem.js"
-export * from "./PixiEvent.js"
+export * from "./EventSystem"
+export * from "./PixiEvent"

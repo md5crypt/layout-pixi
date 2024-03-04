@@ -1,4 +1,4 @@
-import { SdfTextStyle } from "./SdfTextStyle.js"
+import { SdfTextStyle } from "./SdfTextStyle"
 
 export const enum Ascii {
 	NEW_LINE = 10,

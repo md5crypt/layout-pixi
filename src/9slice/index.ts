@@ -1,1 +1,1 @@
-export * from "./SpriteSliced.js"
+export * from "./SpriteSliced"

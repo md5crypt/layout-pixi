@@ -1,5 +1,5 @@
 import { ObservablePoint } from "@pixi/math"
-import { IPointData3d } from "./IPointData3d.js"
+import { IPointData3d } from "./IPointData3d"
 
 export class ObservablePoint3d<T = any> extends ObservablePoint<T> {
 	// @internal

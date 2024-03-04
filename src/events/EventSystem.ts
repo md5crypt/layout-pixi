@@ -5,7 +5,7 @@ import { ExtensionType } from "@pixi/core"
 import { Point } from "@pixi/math"
 import { EventEmitter } from "@pixi/utils"
 
-import { PixiEvent } from "./PixiEvent.js"
+import { PixiEvent } from "./PixiEvent"
 
 declare global {
 	namespace GlobalMixins {

@@ -1,14 +1,11 @@
 
-import type { BaseElement } from "./BaseElement.js"
+import type { BaseElement } from "./BaseElement"
 import { LayoutConstructor, LayoutFactory } from "@md5crypt/layout"
 
-import { ElementTypes } from "./ElementTypes.js"
+import { ElementTypes } from "./ElementTypes"
 import { Texture } from "@pixi/core"
 
 export type PixiElementConfig = ElementTypes[keyof ElementTypes]
-
-/** @deprecated */
-export type LayoutElementJson = PixiElementConfig
 
 export class PixiLayoutFactory extends LayoutFactory<BaseElement, PixiElementConfig> {
 	public onResolveAsset?: (key: string) => Texture

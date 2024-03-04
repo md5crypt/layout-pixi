@@ -1,6 +1,6 @@
 import { Transform } from "@pixi/math"
-import { Matrix3d } from "../Matrix3d.js"
-import { ObservablePoint3d } from "../ObservablePoint3d.js"
+import { Matrix3d } from "../Matrix3d"
+import { ObservablePoint3d } from "../ObservablePoint3d"
 
 export class CameraTransform3d extends Transform {
 	public readonly position3d: ObservablePoint3d

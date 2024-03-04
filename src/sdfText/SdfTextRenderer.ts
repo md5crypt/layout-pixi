@@ -3,7 +3,7 @@ import { ExtensionMetadata, ExtensionType } from "@pixi/extensions"
 import { TYPES, DRAW_MODES, BLEND_MODES } from "@pixi/constants"
 import { createIndicesForQuads } from "@pixi/utils"
 
-import SdfTextShader from "./SdfTextShader.js"
+import SdfTextShader from "./SdfTextShader"
 
 export interface SdfTextRenderObject {
 	get vertexData(): Float32Array

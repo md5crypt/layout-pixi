@@ -2,6 +2,15 @@ import { Sprite } from "@pixi/sprite"
 import { TextureMatrix } from "@pixi/core"
 import { IPointData, Point } from "@pixi/math"
 
+export interface SliceConfiguration {
+	top?: number
+	left?: number
+	bottom?: number
+	right?: number
+	vertical?: number
+	horizontal?: number
+}
+
 export class SpriteSliced extends Sprite {
 	private static _slicedIndices = new Uint16Array([
 		0, 1, 4, 1, 5, 4, 1, 2, 5, 2, 6, 5, 2, 3, 6, 3, 7, 6,
@@ -217,11 +226,28 @@ export class SpriteSliced extends Sprite {
 		return false
 	}
 
-	public setSliced(regions: number[]) {
-		this._leftWidth = regions[0]
-		this._topHeight = regions[1]
-		this._rightWidth = regions[2]
-		this._bottomHeight = regions[3]
+	public setSliced(slices: SliceConfiguration | number) {
+		if (typeof slices == "number") {
+			this._leftWidth = slices
+			this._topHeight = slices
+			this._rightWidth = slices
+			this._bottomHeight = slices
+		} else {
+			if (slices.horizontal !== undefined) {
+				this._leftWidth = slices.horizontal
+				this._rightWidth = slices.horizontal
+			} else {
+				this._leftWidth = slices.left || 0
+				this._rightWidth = slices.right || 0
+			}
+			if (slices.vertical !== undefined) {
+				this._topHeight = slices.vertical
+				this._bottomHeight = slices.vertical
+			} else {
+				this._topHeight = slices.top || 0
+				this._bottomHeight = slices.bottom || 0
+			}
+		}
 		this.isSliced = true
 		// @ts-expect-error
 		this._transformID = -1

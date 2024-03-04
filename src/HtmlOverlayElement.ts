@@ -1,6 +1,6 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
-import { HtmlOverlay } from "./htmlOverlay/index.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
+import { HtmlOverlay } from "./htmlOverlay/index"
 import { Rectangle } from "@pixi/math"
 import { Renderer } from "@pixi/core"
 
@@ -35,7 +35,7 @@ export class HtmlOverlayElement extends BaseElement<HtmlOverlay> {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.handle.width = width

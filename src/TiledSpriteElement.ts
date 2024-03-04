@@ -1,5 +1,5 @@
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 
 import { Texture } from "@pixi/core"
 import { TilingSprite } from "@pixi/sprite-tiling"
@@ -94,7 +94,7 @@ export class TiledSpriteElement extends BaseElement<TilingSprite> {
 	}
 
 	protected onUpdate() {
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 		let scale = 1
 		if (this.scaling == "width") {

@@ -1,5 +1,5 @@
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
-import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
+import { ContainerElement, ContainerElementConfig } from "./ContainerElement"
 
 import { Container } from "@pixi/display"
 import { Renderer, RenderTexture, AbstractRenderer } from "@pixi/core"

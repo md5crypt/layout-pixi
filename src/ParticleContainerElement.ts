@@ -1,9 +1,9 @@
 import { BaseTexture } from "@pixi/core"
 import { Rectangle } from "@pixi/math"
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { ParticleContainer } from "./particles/ParticleContainer.js"
+import { ParticleContainer } from "./particles/ParticleContainer"
 
 export interface ParticleContainerElementConfig extends BaseElementConfig<"container-particle", ParticleContainerElement> {
 	blendMode?: BlendMode
@@ -31,7 +31,7 @@ export class ParticleContainerElement extends BaseElement<ParticleContainer> {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()

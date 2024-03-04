@@ -1,6 +1,6 @@
-import { ParticleEmitter } from "./ParticleEmitter.js"
-import { ParticleEmitterBehavior } from "./ParticleEmitterBehavior.js"
-import { ParticleContainer } from "./ParticleContainer.js"
+import { ParticleEmitter } from "./ParticleEmitter"
+import { ParticleEmitterBehavior } from "./ParticleEmitterBehavior"
+import { ParticleContainer } from "./ParticleContainer"
 
 interface FactoryClass {
 	new (config: Record<string, any>): ParticleEmitterBehavior

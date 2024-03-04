@@ -1,10 +1,10 @@
 
-import type { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import type { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { Sprite3d } from "./projection/proj3d/Sprite3d.js"
+import { Sprite3d } from "./projection/proj3d/Sprite3d"
 import { Rectangle } from "@pixi/math"
 import { Texture } from "@pixi/core"
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
 
 export interface Sprite3dElementConfig extends BaseElementConfig<"sprite-3d", Sprite3dElement> {
 	image?: Texture | string
@@ -42,7 +42,7 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 			computedHeight / texture.height * this._scale
 		)
 		this.applyFlip()
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		this.handle.anchor.set(this._xPivot, this._yPivot)
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(

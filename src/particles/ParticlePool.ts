@@ -1,4 +1,4 @@
-import { Particle } from "./Particle.js"
+import { Particle } from "./Particle"
 
 export class ParticlePool {
 	private _size: number

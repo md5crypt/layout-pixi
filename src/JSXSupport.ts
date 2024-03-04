@@ -1,5 +1,5 @@
-import type { ElementTypes } from "./ElementTypes.js"
-import type { BaseElementConfig } from "./BaseElement.js"
+import type { ElementTypes } from "./ElementTypes"
+import type { BaseElementConfig } from "./BaseElement"
 import type { PixiElementConfig } from "./PixiLayoutFactory"
 
 type LayoutElementProps = {
@@ -72,4 +72,4 @@ export function createElement<T extends IntrinsicElementNames | ComponentFunctio
 	}
 }
 
-export * as default from "./JSXSupport.js"
+export * as default from "./JSXSupport"

@@ -1,6 +1,6 @@
 import { Sprite } from "@pixi/sprite"
 import { Renderer, Texture } from "@pixi/core"
-import { Transform3d } from "./Transform3d.js"
+import { Transform3d } from "./Transform3d"
 
 export class Sprite3d extends Sprite {
 	declare transform: Transform3d

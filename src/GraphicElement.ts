@@ -1,11 +1,10 @@
-import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Graphics } from "@pixi/graphics"
 import { Rectangle } from "@pixi/math"
-import { LayoutElementCallback } from "@md5crypt/layout"
 
 export interface GraphicElementConfig extends BaseElementConfig<"graphic", GraphicElement> {
-	onDraw?: LayoutElementCallback<GraphicElement>
+	onDraw?: (self: GraphicElement) => void
 	blendMode?: BlendMode
 	autoClear?: boolean
 }
@@ -53,7 +52,7 @@ export class GraphicElement extends BaseElement<Graphics> {
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(0, 0, width, height)
 		}
-		this.handle.position.set(this.pivotLeft, this.pivotTop)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
 		this.handle.scale.set(this._scale)
 		this.applyFlip()

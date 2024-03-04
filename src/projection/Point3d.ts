@@ -1,4 +1,4 @@
-import { IPointData3d } from "./IPointData3d.js"
+import { IPointData3d } from "./IPointData3d"
 
 export class Point3d implements IPointData3d {
 	public x = 0

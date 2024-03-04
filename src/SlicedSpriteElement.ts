@@ -1,14 +1,13 @@
-import { BaseElementConfig, BlendMode } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
-import { PositioningBox } from "@md5crypt/layout"
+import { BaseElementConfig, BlendMode } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Texture } from "@pixi/core"
-import { SpriteElement } from "./SpriteElement.js"
-import { SpriteSliced } from "./9slice/index.js"
+import { SpriteElement } from "./SpriteElement"
+import { SliceConfiguration, SpriteSliced } from "./9slice/index"
 
 export interface SlicedSpriteElementConfig extends BaseElementConfig<"sprite-sliced", SlicedSpriteElement> {
 	image?: Texture | string
 	tint?: number
-	slices?: PositioningBox
+	slices?: SliceConfiguration | number
 	scaling?: "width" | "height" | "none"
 	roundPixels?: boolean
 	blendMode?: BlendMode

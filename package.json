@@ -1,53 +1,9 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"description": "pixi support for @md5crypt/layout",
-	"main": "lib/index.js",
-	"types": "lib",
-	"type": "module",
+	"types": "dist",
 	"sideEffects": false,
-	"typesVersions": {
-		"*": {
-			"particles": [
-				"./lib/particles/*",
-				"./lib/particles/index.d.ts"
-			],
-			"projection": [
-				"./lib/projection/*",
-				"./lib/projection/index.d.ts"
-			],
-			"sdfText": [
-				"./lib/sdfText/*",
-				"./lib/sdfText/index.d.ts"
-			],
-			"events": [
-				"./lib/events/*",
-				"./lib/events/index.d.ts"
-			],
-			"9slice": [
-				"./lib/9slice/*",
-				"./lib/9slice/index.d.ts"
-			],
-			"htmlOverlay": [
-				"./lib/htmlOverlay/*",
-				"./lib/htmlOverlay/index.d.ts"
-			],
-			"*": [
-				"./lib/*",
-				"./lib/index.d.ts"
-			]
-		}
-	},
-	"exports": {
-		".": "./lib/index.js",
-		"./*": "./lib/*"
-	},
-	"files": [
-		"lib/*"
-	],
-	"directories": {
-		"lib": "lib"
-	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/md5crypt/layout-pixi.git"
@@ -56,8 +12,9 @@
 		"build": "tsc",
 		"start": "tsc --watch",
 		"lint": "eslint src/*.ts",
-		"link": "mkdir link; mkdir -p lib; cd link; ln -s ../lib .; ln -s ../package.json .",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"link": "node publish.js symlink",
+		"prepublishOnly": "node publish.js verify && tsc --outDir .",
+		"pub": "node publish.js pre-publish && cd dist-package && npm publish && cd .. && node publish.js post-publish"
 	},
 	"author": "Marek Korzeniowski",
 	"license": "MIT",
@@ -70,7 +27,7 @@
 		"pixi.js"
 	],
 	"peerDependencies": {
-		"@md5crypt/layout": "^2.0.0",
+		"@md5crypt/layout": "^2.0.1",
 		"@pixi/core": "^6.5.0",
 		"@pixi/display": "^6.5.0",
 		"@pixi/extensions": "^6.5.0",

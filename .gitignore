@@ -1,5 +1,6 @@
 node_modules
-lib
+dist
+dist-package
 link
 src/node_modules
 src/package.json

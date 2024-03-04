@@ -2,6 +2,7 @@ import { LayoutElement, LayoutElementConfig } from "@md5crypt/layout"
 import { DisplayObject } from "@pixi/display"
 import type { PixiEvent, PixiEventType } from "./events"
 import { PixiLayoutFactory, PixiElementConfig } from "./PixiLayoutFactory"
+import { Matrix } from "@pixi/math"
 
 export const enum BlendMode {
 	NORMAL = 0,
@@ -12,14 +13,60 @@ export const enum BlendMode {
 
 export interface BaseElementConfig<TYPE extends string = string, SELF extends BaseElement = any> extends LayoutElementConfig<PixiElementConfig, SELF> {
 	type: TYPE
-	scale?: number
+
+	/**
+	 * z index works only for controlling render order inside direct parent
+	 *
+	 * utilizes the PIXI sorted flag on container
+	 * @defaultValue 0
+	 */
 	zIndex?: number
+
+	/**
+	 * 0 being transparent and 1 fully opaque
+	 * @defaultValue 1
+	 */
 	alpha?: number
+
+	/**
+	 * in degrees, rotates around the {@link pivot} point
+	 * @defaultValue 0
+	 */
 	rotation?: number
+
+	/**
+	 * mirrors object by internally setting negative scale
+	 * @defaultValue false
+	 */
 	flipped?: false | "vertical" | "horizontal"
+
+	/**
+	 * when set object becomes an interaction target and will receive interaction events
+	 * @defaultValue false
+	 */
 	interactive?: boolean
+
+	/**
+	 * when set disables interaction event interaction processing for the entire subtree. The element itself
+	 * can still be interactive.
+	 * @defaultValue false
+	 */
 	noPropagation?: boolean
+
+	/**
+	 * element pivot point (center point for this element's rotation) with values relative to the elements's size
+	 * * array with [x, y] values or single number that get expanded to [x, x]
+	 * * [0, 0] is top left corner
+	 * * [0.5, 0.5] is center
+	 * * [1, 1] is bottom right
+	 * * any other values are also valid
+	 * @defaultValue [0, 0]
+	 */
 	pivot?: [number, number] | number
+
+	/**
+	 * elements with button mode set will affect mouse cursor when hovered
+	 */
 	buttonMode?: boolean
 }
 
@@ -27,7 +74,9 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	declare public readonly config: Readonly<BaseElementConfig>
 	declare public readonly factory: PixiLayoutFactory
 	
+	/** the underlying PIXI object */
 	public readonly handle: HANDLE
+
 	protected _xPivot: number
 	protected _yPivot: number
 	protected _flipped: "vertical" | "horizontal" | false
@@ -73,6 +122,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
+	/** apply the flip value by setting scale sign */
 	protected applyFlip() {
 		const value = this._flipped
 		if (value == "vertical") {
@@ -87,31 +137,87 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
-	protected get pivotLeft() {
-		return this.computedLeft + this._scale * this._xPivot * this.computedWidth
-	}
+	/**
+	 * register an event handler on a element in this element tree
+	 * @param event - event name
+	 * @param element - the element path on which the event should be registered on
+	 * @param callback - the event handler
+	 * 
+	 * @returns callback as passed to function
+	 */
+	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
 
-	protected get pivotTop() {
-		return this.computedTop + this._scale * this._yPivot * this.computedHeight
-	}
+	/**
+	 * register an event handler on multiple element in this element tree
+	 * @param event - event name
+	 * @param elements - array of element paths on which the event should be registered on
+	 * @param callback - the event handler
+	 * 
+	 * @returns callback as passed to function
+	 */
+	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): (event: PixiEvent) => void
 
-	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, callback: (event: PixiEvent) => void): void
-	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void) {
+	/**
+	 * register an event handler on this element
+	 * @param event - event name
+	 * @param callback - the event handler
+	 * 
+	 * @returns callback as passed to function
+	 */
+	public on(event: PixiEventType, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
+
+	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void): (event: PixiEvent) => void {
 		if (arg2 === undefined) {
-			this.handle.on(event, arg1 as any)
+			this.handle.on(event, arg1 as (event: PixiEvent) => void)
+			return arg1 as (event: PixiEvent) => void
+		} else if (typeof arg1 == "string") {
+			this.getElement(arg1).on(event, arg2)
+			return arg2
 		} else {
-			const elements = Array.isArray(arg1) ? arg1 : [arg1] as string[]
-			for (const element of elements ) {
-				this.getElement(element).on(event, arg2 as any)
+			for (let i = 0; i < arg1.length; i += 1) {
+				this.getElement((arg1 as string[])[i]).on(event, arg2)
 			}
+			return arg2
 		}
 	}
 
-	public setPivot(x: number, y?: number) {
-		this.xPivot = x
-		this.yPivot = y !== undefined ? y : x
+	/**
+	 * calculate the transform matrix for this element
+	 *
+	 * it will not necessary be the same as the underlying PIXI's objects localTransform
+	 * 
+	 * the matrix is not cached and created on demand
+	 * 
+	 * @param matrix - by default a new matrix is created each call, if an matrix is passed it will be used instead
+	 * of creating a new object
+	 * 
+	 * @returns the resulting matrix
+	 */
+	public getLocalMatrix(matrix?: Matrix) {
+		if (!matrix) {
+			matrix = new Matrix()
+		} else {
+			matrix.identity()
+		}
+		
+		matrix.translate(
+			-this.computedWidth * this.xPivot,
+			-this.computedHeight * this._yPivot
+		)
+		matrix.rotate(this.handle.rotation)
+		matrix.scale(this._scale, this._scale)
+		matrix.translate(this.pivotedLeft, this.pivotedTop)
+		return matrix
+	}
+
+	/** final left value that should be used by display objects */
+	protected get pivotedLeft() {
+		return this.computedLeft + this._scale * this._xPivot * this.computedWidth
+	}
+
+	/** final top value that should be used by display objects */
+	protected get pivotedTop() {
+		return this.computedTop + this._scale * this._yPivot * this.computedHeight
 	}
 
 	public get enabled() {
@@ -126,6 +232,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
+	/** {@inheritDoc BaseElementConfig.zIndex} */
 	public get zIndex() {
 		return this.handle.zIndex
 	}
@@ -134,6 +241,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.zIndex = value
 	}
 
+	/** {@inheritDoc BaseElementConfig.alpha} */
 	public get alpha() {
 		return this.handle.alpha
 	}
@@ -142,6 +250,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.alpha = value
 	}
 
+	/** {@inheritDoc BaseElementConfig.rotation} */
 	public get rotation() {
 		return this.handle.angle
 	}
@@ -150,6 +259,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.angle = value
 	}
 
+	/** {@inheritDoc BaseElementConfig.flipped} */
 	public get flipped() {
 		return this._flipped || false
 	}
@@ -161,6 +271,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
+	/** {@inheritDoc BaseElementConfig.interactive} */
 	public get interactive() {
 		return this.handle.interactive || false
 	}
@@ -169,6 +280,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.interactive = value
 	}
 
+	/** {@inheritDoc BaseElementConfig.noPropagation} */
 	public get noPropagation() {
 		return !this.handle.interactiveChildren
 	}
@@ -177,6 +289,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.interactiveChildren = !value
 	}
 
+	/** x component of rotation pivot point */
 	public get xPivot() {
 		return this._xPivot
 	}
@@ -188,6 +301,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
+	/** y component of rotation pivot point */
 	public get yPivot() {
 		return this._yPivot
 	}
@@ -199,6 +313,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		}
 	}
 
+	/** {@inheritDoc BaseElementConfig.buttonMode} */
 	public get buttonMode() {
 		return this.handle.buttonMode
 	}
@@ -207,5 +322,3 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		this.handle.buttonMode = value
 	}
 }
-
-export default BaseElement

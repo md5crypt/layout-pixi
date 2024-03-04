@@ -1,7 +1,7 @@
-import { ContainerElement, ContainerElementConfig } from "./ContainerElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
+import { ContainerElement, ContainerElementConfig } from "./ContainerElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { Container3d } from "./projection/proj3d/Container3d.js"
+import { Container3d } from "./projection/proj3d/Container3d"
 
 export interface Container3dElementConfig extends ContainerElementConfig<"container-3d", Container3dElement> {
 }

@@ -1,6 +1,6 @@
-import { BaseElement, BaseElementConfig } from "./BaseElement.js"
-import { PixiLayoutFactory } from "./PixiLayoutFactory.js"
-import { SdfTextFlushBarrier } from "./sdfText/index.js"
+import { BaseElement, BaseElementConfig } from "./BaseElement"
+import { PixiLayoutFactory } from "./PixiLayoutFactory"
+import { SdfTextFlushBarrier } from "./sdfText/index"
 
 export interface SdfTextFlushBarrierElementConfig extends BaseElementConfig<"text-sdf-barrier", SdfTextFlushBarrierElement> {
 }

@@ -1,10 +1,10 @@
 import { Renderer, Texture, BaseTexture } from "@pixi/core"
 import { DisplayObject, IDestroyOptions } from "@pixi/display"
 import { Rectangle } from "@pixi/math"
-import { BBParser, Ascii, RichText, RichTextChar } from "./BBParser.js"
-import { SdfFontData, SdfFontCharData } from "./SdfFontData.js"
-import { SdfTextConstants, SdfTextRenderer, SdfTextRenderObject } from "./SdfTextRenderer.js"
-import { SdfTextStyle } from "./SdfTextStyle.js"
+import { BBParser, Ascii, RichText, RichTextChar } from "./BBParser"
+import { SdfFontData, SdfFontCharData } from "./SdfFontData"
+import { SdfTextConstants, SdfTextRenderer, SdfTextRenderObject } from "./SdfTextRenderer"
+import { SdfTextStyle } from "./SdfTextStyle"
 
 interface InternalSdfFontCharData extends SdfFontCharData {
 	texture: Texture | null

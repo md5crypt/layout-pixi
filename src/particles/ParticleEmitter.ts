@@ -1,6 +1,6 @@
-import { ParticlePool } from "./ParticlePool.js"
-import { ParticleContainer } from "./ParticleContainer.js"
-import { ParticleEmitterBehavior } from "./ParticleEmitterBehavior.js"
+import { ParticlePool } from "./ParticlePool"
+import { ParticleContainer } from "./ParticleContainer"
+import { ParticleEmitterBehavior } from "./ParticleEmitterBehavior"
 
 export class ParticleEmitter {
 	private _behaviors: Map<typeof ParticleEmitterBehavior, ParticleEmitterBehavior>
