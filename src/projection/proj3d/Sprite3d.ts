@@ -2,12 +2,20 @@ import { Sprite } from "@pixi/sprite"
 import { Renderer, Texture } from "@pixi/core"
 import { Transform3d } from "./Transform3d"
 
+export const enum BackTextureTransform {
+	NONE,
+	MIRROR_VERTICAL,
+	MIRROR_HORIZONTAL
+}
+
 export class Sprite3d extends Sprite {
 	declare transform: Transform3d
 	private _culledByFrustrum: boolean
 
 	public frontTexture: Texture
 	public backTexture: Texture | null
+
+	public backTextureTransform: BackTextureTransform
 
 	constructor(texture: Texture) {
 		super(texture)
@@ -16,24 +24,7 @@ export class Sprite3d extends Sprite {
 		this._culledByFrustrum = false
 		this.frontTexture = texture
 		this.backTexture = null
-	}
-
-	private updateTexture() {
-		let texture
-		if (this.backTexture) {
-			texture = this.transform.worldTransform3d.isFrontFace() ? this.frontTexture : this.backTexture
-		} else {
-			texture = this.frontTexture
-		}
-		if (!texture) {
-			texture = Texture.EMPTY
-		}
-		if (texture != this._texture) {
-			this._textureID = -1
-			this._textureTrimmedID = -1
-			this._texture = texture
-		}
-		return texture
+		this.backTextureTransform = BackTextureTransform.NONE
 	}
 
 	isFrontFace(forceUpdate = false): boolean {
@@ -53,7 +44,13 @@ export class Sprite3d extends Sprite {
 	}
 
 	calculateVertices() {
-		const texture = this.updateTexture()
+		const frontFace = this.transform.worldTransform3d.isFrontFace()
+		const texture = this.backTexture && !frontFace ? this.backTexture : (this.frontTexture || Texture.EMPTY)
+		if (texture != this._texture) {
+			this._textureID = -1
+			this._textureTrimmedID = -1
+			this._texture = texture
+		}
 
 		// @ts-expect-error
 		if (this._transformID === this.transform._worldID && this._textureID === texture._updateID) {
@@ -62,7 +59,36 @@ export class Sprite3d extends Sprite {
 
 		// update texture UV here, because base texture can be changed without calling `_onTextureUpdate`
 		if (this._textureID !== texture._updateID) {
-			this.uvs = texture._uvs.uvsFloat32
+			if (!frontFace) {
+				const org = texture._uvs.uvsFloat32
+				if (this.backTextureTransform == BackTextureTransform.NONE) {
+					this.uvs = org
+				} else if (this.backTextureTransform == BackTextureTransform.MIRROR_VERTICAL) {
+					const uvs = new Float32Array(8)
+					uvs[0] = org[2]
+					uvs[1] = org[3]
+					uvs[2] = org[0]
+					uvs[3] = org[1]
+					uvs[4] = org[6]
+					uvs[5] = org[7]
+					uvs[6] = org[4]
+					uvs[7] = org[5]
+					this.uvs = uvs
+				} else {
+					const uvs = new Float32Array(8)
+					uvs[0] = org[4]
+					uvs[1] = org[5]
+					uvs[2] = org[6]
+					uvs[3] = org[7]
+					uvs[4] = org[0]
+					uvs[5] = org[1]
+					uvs[6] = org[2]
+					uvs[7] = org[3]
+					this.uvs = uvs
+				}
+			} else {
+				this.uvs = texture._uvs.uvsFloat32
+			}
 		}
 
 		// @ts-expect-error

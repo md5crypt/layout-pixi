@@ -1,7 +1,7 @@
 
 import type { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { Sprite3d } from "./projection/proj3d/Sprite3d"
+import { BackTextureTransform, Sprite3d } from "./projection/proj3d/Sprite3d"
 import { Rectangle } from "@pixi/math"
 import { Texture } from "@pixi/core"
 import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
@@ -11,6 +11,7 @@ export interface Sprite3dElementConfig extends BaseElementConfig<"sprite-3d", Sp
 	backImage?: Texture | string
 	tint?: number
 	blendMode?: BlendMode
+	mirrorBackImage?: "vertical" | "horizontal"
 }
 
 export class Sprite3dElement extends BaseElement<Sprite3d> {
@@ -21,7 +22,6 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 
 	protected constructor(factory: PixiLayoutFactory, config: Sprite3dElementConfig) {
 		super(factory, config, new Sprite3d(factory.resolveAsset(config.image)))
-		this.handle.anchor.set(0, 0)
 		if (config.tint !== undefined) {
 			this.handle.tint = config.tint
 		}
@@ -31,23 +31,30 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 		if (config.backImage) {
 			this.handle.backTexture = factory.resolveAsset(config.backImage)
 		}
+		if (config.mirrorBackImage) {
+			this.mirrorBackImage = config.mirrorBackImage
+		}
 	}
 
 	protected onUpdate() {
 		const computedWidth = this.computedWidth
 		const computedHeight = this.computedHeight
 		const texture = this.handle.texture
-		this.handle.scale.set(
-			computedWidth / texture.width * this._scale,
-			computedHeight / texture.height * this._scale
-		)
+
+		const xScale = computedWidth / texture.width
+		const yScale = computedHeight / texture.height
+
+		this.handle.scale.set(xScale * this._scale, yScale * this._scale)
+		this.handle.pivot.set(computedWidth * this._xPivot, computedHeight * this._yPivot)
 		this.applyFlip()
-		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
-		this.handle.anchor.set(this._xPivot, this._yPivot)
+		this.handle.position.set(
+			this.computedLeft + this._scale * xScale * this._xPivot * this.computedWidth,
+			this.computedTop + this._scale * yScale * this._yPivot * this.computedHeight
+		)
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(
-				this._xPivot * -texture.width,
-				this._yPivot * -texture.height,
+				0,
+				0,
 				texture.width,
 				texture.height
 			)
@@ -94,6 +101,24 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 		if (this.handle.backTexture != texture) {
 			this.handle.backTexture = texture
 			this.setDirty()
+		}
+	}
+
+	public get mirrorBackImage() {
+		if (this.handle.backTextureTransform) {
+			return this.handle.backTextureTransform == BackTextureTransform.MIRROR_HORIZONTAL ? "horizontal" : "vertical"
+		} else {
+			return null
+		}
+	}
+
+	public set mirrorBackImage(value: null | "vertical" | "horizontal") {
+		if (value == "vertical") {
+			this.handle.backTextureTransform = BackTextureTransform.MIRROR_VERTICAL
+		} else if (value == "horizontal") {
+			this.handle.backTextureTransform = BackTextureTransform.MIRROR_HORIZONTAL
+		} else {
+			this.handle.backTextureTransform = BackTextureTransform.NONE
 		}
 	}
 

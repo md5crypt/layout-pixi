@@ -37,6 +37,7 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 		this._scaling = "none"
 		this._xAlign = 0
 		this._yAlign = 0
+
 		if (config.tint !== undefined) {
 			this.handle.tint = config.tint
 		}
@@ -260,12 +261,12 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 						const height = computedWidth / textureRatio
 						scale[0] = height / textureHeight
 						scale[1] = scale[0]
-						yOffset += (computedHeight - height) * (this._yAlign - this._yPivot)
+						yOffset += (computedHeight - height) * this._yAlign
 					} else {
 						const width = computedHeight * textureRatio
 						scale[0] = width / textureWidth
 						scale[1] = scale[0]
-						xOffset += (computedWidth - width) * (this._xAlign - this._xPivot)
+						xOffset += (computedWidth - width) * this._xAlign
 					}
 				} else {
 					if (elementRatio < textureRatio) {
@@ -291,7 +292,7 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 					xCrop[0] = (textureWidth - computedWidth) * this._xAlign
 					xCrop[1] = (textureWidth - computedWidth) * (1 - this._xAlign)
 				} else {
-					xOffset += (computedWidth - textureWidth) * (this._xAlign - this._xPivot)
+					xOffset += (computedWidth - textureWidth) * this._xAlign
 				}
 				const textureHeight = this._texture.height
 				let yCrop = [0, 0]
@@ -300,7 +301,7 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 					yCrop[0] = (textureHeight - computedHeight) * this._yAlign
 					yCrop[1] = (textureHeight - computedHeight) * (1 - this._yAlign)
 				} else {
-					yOffset += (computedHeight - textureHeight) * (this._yAlign - this._yPivot)
+					yOffset += (computedHeight - textureHeight) * this._yAlign
 				}
 				if (crop) {
 					this.crop([xCrop[0], yCrop[0], xCrop[1], yCrop[1]], false)
@@ -325,8 +326,8 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 				isSliced = true
 				break
 			default:
-				xOffset += (computedHeight - this._texture.height) * (this._yAlign - this._yPivot)
-				yOffset += (computedWidth - this._texture.width) * (this._yAlign - this._yPivot)
+				xOffset += (computedHeight - this._texture.height) * this._yAlign
+				yOffset += (computedWidth - this._texture.width) * this._yAlign
 				break
 		}
 		this.handle.isSliced = isSliced
@@ -334,12 +335,13 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 			scale[0] * this._scale,
 			scale[1] * this._scale
 		)
+
+		this.handle.pivot.set(computedWidth * this._xPivot - xOffset / scale[0], computedHeight * this._yPivot - yOffset / scale[1])
 		this.applyFlip()
 		this.handle.position.set(
-			this.pivotedLeft + xOffset * this._scale,
-			this.pivotedTop + this._scale * yOffset
+			this.computedLeft + this._scale * scale[0] * this._xPivot * this.computedWidth,
+			this.computedTop + this._scale * scale[1] * this._yPivot * this.computedHeight
 		)
-		this.handle.anchor.set(this._xPivot, this._yPivot)
 	}
 
 	public get contentHeight() {

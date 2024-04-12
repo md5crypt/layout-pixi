@@ -251,7 +251,7 @@ export class BitmapTextElement extends BaseElement<BitmapText> {
 		if (skipRedraw) {
 			return
 		}
-	
+
 		this.handle.text = this._text
 		this.handle.fontName = this.style.fontName || "null"
 		this.handle.align = this.style.align || "left"

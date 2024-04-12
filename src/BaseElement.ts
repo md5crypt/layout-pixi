@@ -73,7 +73,7 @@ export interface BaseElementConfig<TYPE extends string = string, SELF extends Ba
 export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> extends LayoutElement<PixiElementConfig, BaseElement> {
 	declare public readonly config: Readonly<BaseElementConfig>
 	declare public readonly factory: PixiLayoutFactory
-	
+
 	/** the underlying PIXI object */
 	public readonly handle: HANDLE
 
@@ -142,7 +142,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 * @param event - event name
 	 * @param element - the element path on which the event should be registered on
 	 * @param callback - the event handler
-	 * 
+	 *
 	 * @returns callback as passed to function
 	 */
 	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
@@ -152,7 +152,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 * @param event - event name
 	 * @param elements - array of element paths on which the event should be registered on
 	 * @param callback - the event handler
-	 * 
+	 *
 	 * @returns callback as passed to function
 	 */
 	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): (event: PixiEvent) => void
@@ -161,7 +161,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 * register an event handler on this element
 	 * @param event - event name
 	 * @param callback - the event handler
-	 * 
+	 *
 	 * @returns callback as passed to function
 	 */
 	public on(event: PixiEventType, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
@@ -185,12 +185,12 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 * calculate the transform matrix for this element
 	 *
 	 * it will not necessary be the same as the underlying PIXI's objects localTransform
-	 * 
+	 *
 	 * the matrix is not cached and created on demand
-	 * 
+	 *
 	 * @param matrix - by default a new matrix is created each call, if an matrix is passed it will be used instead
 	 * of creating a new object
-	 * 
+	 *
 	 * @returns the resulting matrix
 	 */
 	public getLocalMatrix(matrix?: Matrix) {
@@ -199,7 +199,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		} else {
 			matrix.identity()
 		}
-		
+
 		matrix.translate(
 			-this.computedWidth * this.xPivot,
 			-this.computedHeight * this._yPivot

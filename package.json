@@ -1,6 +1,6 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"description": "pixi support for @md5crypt/layout",
 	"types": "dist",
 	"sideEffects": false,
