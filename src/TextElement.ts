@@ -10,6 +10,7 @@ export interface TextElementConfig extends BaseElementConfig<"text", TextElement
 	resolution?: number
 	roundPixels?: boolean
 	blendMode?: BlendMode
+	tint?: number
 }
 
 class PatchedText extends Text {
@@ -75,6 +76,9 @@ export class TextElement extends BaseElement<Text> {
 		}
 		if (config.blendMode !== undefined) {
 			this.handle.blendMode = config.blendMode as number
+		}
+		if (config.tint !== undefined) {
+			this.handle.tint = config.tint
 		}
 	}
 
@@ -152,6 +156,14 @@ export class TextElement extends BaseElement<Text> {
 		this._text = value
 		this._textRect = null
 		this.setDirty()
+	}
+
+	public get tint() {
+		return this.handle.tint
+	}
+
+	public set tint(value: number) {
+		this.handle.tint = value
 	}
 
 	public get style() {

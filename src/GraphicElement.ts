@@ -7,6 +7,7 @@ export interface GraphicElementConfig extends BaseElementConfig<"graphic", Graph
 	onDraw?: (self: GraphicElement) => void
 	blendMode?: BlendMode
 	autoClear?: boolean
+	tint?: number
 }
 
 export class GraphicElement extends BaseElement<Graphics> {
@@ -27,6 +28,9 @@ export class GraphicElement extends BaseElement<Graphics> {
 		if (config.autoClear !== undefined) {
 			this.autoClear = config.autoClear
 		}
+		if (config.tint !== undefined) {
+			this.handle.tint = config.tint
+		}
 	}
 
 	public get onDraw() {
@@ -44,6 +48,14 @@ export class GraphicElement extends BaseElement<Graphics> {
 
 	public set blendMode(value: BlendMode) {
 		this.handle.blendMode = value as number
+	}
+
+	public get tint() {
+		return this.handle.tint
+	}
+
+	public set tint(value: number) {
+		this.handle.tint = value
 	}
 
 	protected onUpdate() {
