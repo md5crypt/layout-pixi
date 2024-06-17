@@ -87,6 +87,7 @@ export class EventSystem extends EventEmitter {
 	}
 
 	public readonly renderer: Renderer
+	public readonly handleEvent: (e: PointerEvent) => any
 	public autoPreventDefault: boolean
 	private _lastCursor: string
 	private _cursor: string
@@ -97,10 +98,6 @@ export class EventSystem extends EventEmitter {
 	private _lastEvent: PixiEvent | null
 	private _trackingData: Map<number, TrackingData>
 
-	private _onPointerMove
-	private _onPointerDown
-	private _onPointerCancel
-	private _onPointerUp
 	private _tickerUpdate?: () => void
 
 	public constructor(renderer: Renderer) {
@@ -114,31 +111,27 @@ export class EventSystem extends EventEmitter {
 		this._cursorControl = "auto"
 		this._lastCursor = ""
 		this._cursor = ""
-		this._onPointerMove = (e: PointerEvent) => this.handleEvent("move", e)
-		this._onPointerDown = (e: PointerEvent) => this.handleEvent("down", e)
-		this._onPointerCancel = (e: PointerEvent) => this.handleEvent("cancel", e)
-		this._onPointerUp = (e: PointerEvent) => this.handleEvent("up", e)
+
+		this.handleEvent = (event: PointerEvent) => {
+			if (this.autoPreventDefault) {
+				event.preventDefault()
+			}
+			this._capturedEvents.push(new PixiEvent(event, this.renderer))
+		}
 
 		const view = this.renderer.view
 		view.style.touchAction = "none"
 
 		const options = { capture: true, passive: false }
-		document.addEventListener("pointermove", this._onPointerMove, options)
-		view.addEventListener("pointerdown", this._onPointerDown, options)
-		globalThis.addEventListener("pointercancel", this._onPointerCancel, options)
-		globalThis.addEventListener("pointerup", this._onPointerUp, options)
+		document.addEventListener("pointermove", this.handleEvent, options)
+		view.addEventListener("pointerdown", this.handleEvent, options)
+		globalThis.addEventListener("pointercancel", this.handleEvent, options)
+		globalThis.addEventListener("pointerup", this.handleEvent, options)
 
 		if (EventSystem.useGlobalTicker) {
 			this._tickerUpdate = () => this.update()
 			Ticker.system.add(this._tickerUpdate, undefined, EventSystem.globalTickerPriority)
 		}
-	}
-
-	private handleEvent(type: string, event: PointerEvent) {
-		if (this.autoPreventDefault) {
-			event.preventDefault()
-		}
-		this._capturedEvents.push(new PixiEvent(type, event, this.renderer))
 	}
 
 	private getTrackingData(event: PixiEvent) {
@@ -164,7 +157,7 @@ export class EventSystem extends EventEmitter {
 			for (let i = 0; i < events.length; i += 1) {
 				const event = events[i]
 				this.processEvent(event, lastObjectRendered)
-				if (event.__type == "move") {
+				if (event.__type == "pointermove") {
 					lastMoveEvent = event
 				}
 			}
@@ -174,7 +167,7 @@ export class EventSystem extends EventEmitter {
 		if (this._lastMoveEvent && !lastMoveEvent) {
 			this.processEvent(this._lastMoveEvent, lastObjectRendered)
 		} else if (lastMoveEvent) {
-			lastMoveEvent.__type = "update"
+			lastMoveEvent.__type = "pointerupdate"
 			this._lastMoveEvent = lastMoveEvent.pointerType == "mouse" ? lastMoveEvent : null
 		}
 	}
@@ -183,10 +176,10 @@ export class EventSystem extends EventEmitter {
 		const trackingData = this.getTrackingData(event)
 		const tapSet = trackingData.tapSet
 		switch (event.__type) {
-			case "update":
+			case "pointerupdate":
 				event.target = null
 				/* falls through */
-			case "move":
+			case "pointermove":
 				if (event.pointerType == "mouse") {
 					let cursor: string | null = null
 					const hoverSet = new Set<DisplayObject>()
@@ -198,7 +191,7 @@ export class EventSystem extends EventEmitter {
 						if (!cursor && x.cursor) {
 							cursor = x.cursor
 						}
-						if (event.__type == "move") {
+						if (event.__type == "pointermove") {
 							x.emit("pointermove", event)
 						}
 						if (!lastHoverSet.delete(x)) {
@@ -218,11 +211,11 @@ export class EventSystem extends EventEmitter {
 				} else {
 					EventSystem.treeWalk(root, event.global, x => x.emit("pointermove", event))
 				}
-				if (event.__type == "move") {
+				if (event.__type == "pointermove") {
 					this.emit("pointermove", event)
 				}
 				break
-			case "down":
+			case "pointerdown":
 				if (tapSet.size) {
 					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
@@ -236,7 +229,7 @@ export class EventSystem extends EventEmitter {
 				})
 				this.emit("pointerdown", event)
 				break
-			case "up":
+			case "pointerup":
 				EventSystem.treeWalk(root, event.global, x => {
 					if (!event.target) {
 						event.target = x
@@ -254,7 +247,7 @@ export class EventSystem extends EventEmitter {
 				this.emit("pointerup", event)
 				this.emit("pointetap", event)
 				break
-			case "cancel":
+			case "pointercancel":
 				if (tapSet.size) {
 					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
@@ -273,10 +266,10 @@ export class EventSystem extends EventEmitter {
 		view.style.removeProperty("touch-action")
 
 		const options = { capture: true, passive: false }
-		document.addEventListener("pointermove", this._onPointerMove, options)
-		view.addEventListener("pointerdown", this._onPointerDown, options)
-		globalThis.addEventListener("pointercancel", this._onPointerCancel, options)
-		globalThis.addEventListener("pointerup", this._onPointerUp, options)
+		document.removeEventListener("pointermove", this.handleEvent, options)
+		view.removeEventListener("pointerdown", this.handleEvent, options)
+		globalThis.removeEventListener("pointercancel", this.handleEvent, options)
+		globalThis.removeEventListener("pointerup", this.handleEvent, options)
 	}
 
 	private setCursorMode(mode: "auto" | "forced" | "disabled", cursor: string) {

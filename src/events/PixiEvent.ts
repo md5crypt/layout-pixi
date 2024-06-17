@@ -21,13 +21,13 @@ export class PixiEvent {
 	public readonly tangentialPressure: number
 
 	// @internal
-	public __type: string
+	public __type: "pointerdown" | "pointerup" | "pointermove" | "pointercancel" | "pointerupdate"
 
 	private _target: DisplayObject | null
 
 	// @internal
-	constructor(type: string, event: PointerEvent, renderer: Renderer) {
-		this.__type = type
+	constructor(event: PointerEvent, renderer: Renderer) {
+		this.__type = event.type as typeof this.__type
 		this.originalEvent = event
 		this.pointerId = event.pointerId
 		this.isPrimary = event.isPrimary

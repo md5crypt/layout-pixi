@@ -141,7 +141,7 @@ export class HtmlOverlay extends DisplayObject {
 
 		this._paint = HtmlOverlay._paint
 	}
-	
+
 	public attach(renderer: Renderer) {
 		if (!this._attached) {
 			this._attached = true

@@ -43,10 +43,6 @@ export class HtmlOverlayElement extends BaseElement<HtmlOverlay> {
 		this.applyFlip()
 	}
 
-	protected onDetach() {
-		this.handle.detach()
-	}
-
 	public set style(value: string) {
 		this.handle.style = value
 	}
