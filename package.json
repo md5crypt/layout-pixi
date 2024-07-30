@@ -1,6 +1,6 @@
 {
 	"name": "@md5crypt/layout-pixi",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"description": "pixi support for @md5crypt/layout",
 	"types": "dist",
 	"sideEffects": false,
@@ -27,7 +27,7 @@
 		"pixi.js"
 	],
 	"peerDependencies": {
-		"@md5crypt/layout": "^2.0.2",
+		"@md5crypt/layout": "^2.0.3",
 		"@pixi/core": "^6.5.0",
 		"@pixi/display": "^6.5.0",
 		"@pixi/extensions": "^6.5.0",

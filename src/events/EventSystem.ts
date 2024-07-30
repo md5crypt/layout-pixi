@@ -40,6 +40,7 @@ DisplayObject.mixin({
 interface TrackingData {
 	tapSet: Set<DisplayObject>
 	hoverSet: Set<DisplayObject>
+	canceled: boolean
 }
 
 export class EventSystem extends EventEmitter {
@@ -87,7 +88,7 @@ export class EventSystem extends EventEmitter {
 	}
 
 	public readonly renderer: Renderer
-	public readonly handleEvent: (e: PointerEvent) => any
+	public readonly handleEvent: (e: MouseEvent) => any
 	public autoPreventDefault: boolean
 	private _lastCursor: string
 	private _cursor: string
@@ -112,7 +113,7 @@ export class EventSystem extends EventEmitter {
 		this._lastCursor = ""
 		this._cursor = ""
 
-		this.handleEvent = (event: PointerEvent) => {
+		this.handleEvent = (event: MouseEvent) => {
 			if (this.autoPreventDefault) {
 				event.preventDefault()
 			}
@@ -124,6 +125,7 @@ export class EventSystem extends EventEmitter {
 
 		const options = { capture: true, passive: false }
 		document.addEventListener("pointermove", this.handleEvent, options)
+		document.addEventListener("wheel", this.handleEvent, options)
 		view.addEventListener("pointerdown", this.handleEvent, options)
 		globalThis.addEventListener("pointercancel", this.handleEvent, options)
 		globalThis.addEventListener("pointerup", this.handleEvent, options)
@@ -139,7 +141,8 @@ export class EventSystem extends EventEmitter {
 		if (!data) {
 			data = {
 				tapSet: new Set(),
-				hoverSet: new Set()
+				hoverSet: new Set(),
+				canceled: false
 			}
 			this._trackingData.set(event.pointerId, data)
 		}
@@ -172,15 +175,18 @@ export class EventSystem extends EventEmitter {
 		}
 	}
 
+	public cancelEvent(event: PixiEvent) {
+		this.getTrackingData(event).canceled = true
+	}
+
 	public processEvent(event: PixiEvent, root: DisplayObject) {
-		const trackingData = this.getTrackingData(event)
-		const tapSet = trackingData.tapSet
 		switch (event.__type) {
 			case "pointerupdate":
 				event.target = null
 				/* falls through */
 			case "pointermove":
 				if (event.pointerType == "mouse") {
+					const trackingData = this.getTrackingData(event)
 					let cursor: string | null = null
 					const hoverSet = new Set<DisplayObject>()
 					const lastHoverSet = trackingData.hoverSet
@@ -215,7 +221,10 @@ export class EventSystem extends EventEmitter {
 					this.emit("pointermove", event)
 				}
 				break
-			case "pointerdown":
+			case "pointerdown": {
+				const trackingData = this.getTrackingData(event)
+				const tapSet = trackingData.tapSet
+				trackingData.canceled = false
 				if (tapSet.size) {
 					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
 					tapSet.clear()
@@ -229,30 +238,55 @@ export class EventSystem extends EventEmitter {
 				})
 				this.emit("pointerdown", event)
 				break
-			case "pointerup":
+			}
+			case "pointerup": {
+				const trackingData = this.getTrackingData(event)
+				const tapSet = trackingData.tapSet
+				if (trackingData.canceled) {
+					event.__type = "pointercancel"
+					const tapSet = this.getTrackingData(event).tapSet
+					if (tapSet.size) {
+						tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
+						tapSet.clear()
+					}
+					this.emit("pointerup", event)
+				} else {
+					EventSystem.treeWalk(root, event.global, x => {
+						if (!event.target) {
+							event.target = x
+						}
+						x.emit("pointerup", event)
+						if (tapSet.has(x)) {
+							tapSet.delete(x)
+							x.emit("pointertap", event)
+						}
+					})
+					if (tapSet.size) {
+						tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
+						tapSet.clear()
+					}
+					this.emit("pointerup", event)
+					this.emit("pointetap", event)
+				}
+				break
+			}
+			case "pointercancel": {
+				const tapSet = this.getTrackingData(event).tapSet
+				if (tapSet.size) {
+					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
+					tapSet.clear()
+				}
+				this.emit("pointerup", event)
+				break
+			}
+			case "wheel":
 				EventSystem.treeWalk(root, event.global, x => {
 					if (!event.target) {
 						event.target = x
 					}
-					x.emit("pointerup", event)
-					if (tapSet.has(x)) {
-						tapSet.delete(x)
-						x.emit("pointertap", event)
-					}
+					x.emit("wheel", event)
 				})
-				if (tapSet.size) {
-					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
-					tapSet.clear()
-				}
-				this.emit("pointerup", event)
-				this.emit("pointetap", event)
-				break
-			case "pointercancel":
-				if (tapSet.size) {
-					tapSet.forEach(x => x.interactive && x.emit("pointerupoutside", event))
-					tapSet.clear()
-				}
-				this.emit("pointerup", event)
+				this.emit("wheel", event)
 				break
 		}
 	}

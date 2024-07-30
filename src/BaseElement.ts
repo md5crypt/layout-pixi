@@ -1,6 +1,6 @@
 import { LayoutElement, LayoutElementConfig } from "@md5crypt/layout"
 import { DisplayObject } from "@pixi/display"
-import type { PixiEvent, PixiEventType } from "./events"
+import type { PixiEvent, PixiEventMapping, PixiEventType } from "./events"
 import { PixiLayoutFactory, PixiElementConfig } from "./PixiLayoutFactory"
 import { Matrix } from "@pixi/math"
 
@@ -145,7 +145,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 *
 	 * @returns callback as passed to function
 	 */
-	public on(event: PixiEventType, element: string, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
+	public on<T extends PixiEventType>(event: T, element: string, callback: (event: PixiEvent<PixiEventMapping[T]>) => void): (event: PixiEvent) => void
 
 	/**
 	 * register an event handler on multiple element in this element tree
@@ -155,7 +155,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 *
 	 * @returns callback as passed to function
 	 */
-	public on(event: PixiEventType, element: string[], callback: (event: PixiEvent) => void): (event: PixiEvent) => void
+	public on<T extends PixiEventType>(event: T, element: string[], callback: (event: PixiEvent<PixiEventMapping[T]>) => void): (event: PixiEvent) => void
 
 	/**
 	 * register an event handler on this element
@@ -164,7 +164,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	 *
 	 * @returns callback as passed to function
 	 */
-	public on(event: PixiEventType, callback: (event: PixiEvent) => void): (event: PixiEvent) => void
+	public on<T extends PixiEventType>(event: T, callback: (event: PixiEvent<PixiEventMapping[T]>) => void): (event: PixiEvent) => void
 
 	public on(event: PixiEventType, arg1: string | string[] | ((event: PixiEvent) => void), arg2?: (event: PixiEvent) => void): (event: PixiEvent) => void {
 		if (arg2 === undefined) {
@@ -210,6 +210,17 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		return matrix
 	}
 
+	/**
+	 * get scale as set on pixi world transform
+	 * note that this value updates only when world transform updates so before render
+	 *
+	 * @returns element global scale
+	 */
+	public get globalScale() {
+		const transform = this.handle.worldTransform
+		return Math.sqrt(transform.a * transform.a + transform.b * transform.b)
+	}
+
 	/** final left value that should be used by display objects */
 	protected get pivotedLeft() {
 		return this.computedLeft + this._scale * this._xPivot * this.computedWidth
@@ -228,7 +239,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 		if (this._enabled != value) {
 			this.handle.visible = value
 			this._enabled = value
-			this._dirty = true
+			this.setDirty()
 		}
 	}
 
@@ -267,7 +278,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	public set flipped(value: false | "vertical" | "horizontal") {
 		if (this._flipped != value) {
 			this._flipped = value
-			this._dirty = true
+			this.setDirty()
 		}
 	}
 
@@ -297,7 +308,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	public set xPivot(value: number) {
 		if (this._xPivot != value) {
 			this._xPivot = value
-			this._dirty = true
+			this.setDirty()
 		}
 	}
 
@@ -309,7 +320,7 @@ export abstract class BaseElement<HANDLE extends DisplayObject = DisplayObject> 
 	public set yPivot(value: number) {
 		if (this._yPivot != value) {
 			this._yPivot = value
-			this._dirty = true
+			this.setDirty()
 		}
 	}
 
