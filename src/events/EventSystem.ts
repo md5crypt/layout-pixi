@@ -90,11 +90,13 @@ export class EventSystem extends EventEmitter {
 	public readonly renderer: Renderer
 	public readonly handleEvent: (e: MouseEvent) => any
 	public autoPreventDefault: boolean
+	public queueEvents: boolean
 	private _lastCursor: string
 	private _cursor: string
 	private _cursorControl: "auto" | "forced" | "disabled"
 
 	private _capturedEvents: PixiEvent[]
+	private _pointerMoved: boolean
 	private _lastMoveEvent: PixiEvent | null
 	private _lastEvent: PixiEvent | null
 	private _trackingData: Map<number, TrackingData>
@@ -105,6 +107,8 @@ export class EventSystem extends EventEmitter {
 		super()
 		this.renderer = renderer
 		this.autoPreventDefault = false
+		this.queueEvents = true
+		this._pointerMoved = false
 		this._lastMoveEvent = null
 		this._lastEvent = null
 		this._capturedEvents = []
@@ -117,7 +121,22 @@ export class EventSystem extends EventEmitter {
 			if (this.autoPreventDefault) {
 				event.preventDefault()
 			}
-			this._capturedEvents.push(new PixiEvent(event, this.renderer))
+			const pixiEvent = new PixiEvent(event, this.renderer)
+			if (this.queueEvents) {
+				this._capturedEvents.push(pixiEvent)
+			} else {
+				const lastObjectRendered = this.renderer._lastObjectRendered as DisplayObject
+				if (!lastObjectRendered) {
+					this._capturedEvents.push(pixiEvent)
+				} else {
+					this.processEvent(pixiEvent, lastObjectRendered)
+					if (pixiEvent.__type == "pointermove") {
+						this._pointerMoved = true
+						this._lastMoveEvent = pixiEvent
+					}
+					this._lastEvent = pixiEvent
+				}
+			}
 		}
 
 		const view = this.renderer.view
@@ -155,24 +174,24 @@ export class EventSystem extends EventEmitter {
 			return
 		}
 		const events = this._capturedEvents
-		let lastMoveEvent = null
+		let pointerMoved = this._pointerMoved
 		if (events.length) {
 			for (let i = 0; i < events.length; i += 1) {
 				const event = events[i]
 				this.processEvent(event, lastObjectRendered)
 				if (event.__type == "pointermove") {
-					lastMoveEvent = event
+					pointerMoved = true
+					this._lastMoveEvent = event
 				}
 			}
 			this._lastEvent = events[events.length - 1]
 			this._capturedEvents = []
 		}
-		if (this._lastMoveEvent && !lastMoveEvent) {
+		if (!pointerMoved && this._lastMoveEvent && this._lastMoveEvent.pointerType == "mouse") {
+			this._lastMoveEvent.__type = "pointerupdate"
 			this.processEvent(this._lastMoveEvent, lastObjectRendered)
-		} else if (lastMoveEvent) {
-			lastMoveEvent.__type = "pointerupdate"
-			this._lastMoveEvent = lastMoveEvent.pointerType == "mouse" ? lastMoveEvent : null
 		}
+		this._pointerMoved = false
 	}
 
 	public cancelEvent(event: PixiEvent) {

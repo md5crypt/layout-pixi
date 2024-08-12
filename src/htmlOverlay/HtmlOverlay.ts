@@ -26,6 +26,8 @@ export class HtmlOverlay extends DisplayObject {
 
 	public persistent: boolean
 
+	public onContentChanged?: (root: HTMLDivElement) => void
+
 	private _htmlRoot: HTMLDivElement
 
 	private _style: string
@@ -130,6 +132,9 @@ export class HtmlOverlay extends DisplayObject {
 		if (this._contentDirty) {
 			this._contentDirty = false
 			this._contentElement.innerHTML = this._content
+			if (this.onContentChanged) {
+				this.onContentChanged(this._contentElement)
+			}
 		}
 
 		if (!this._enabled) {
@@ -204,6 +209,10 @@ export class HtmlOverlay extends DisplayObject {
 
 	public get htmlRoot() {
 		return this._htmlRoot
+	}
+
+	public get contentElement() {
+		return this._contentElement
 	}
 
 	public get interactiveChildren() {
