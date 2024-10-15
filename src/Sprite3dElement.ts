@@ -1,7 +1,7 @@
 
 import type { PixiLayoutFactory } from "./PixiLayoutFactory"
 
-import { BackTextureTransform, Sprite3d } from "./projection/proj3d/Sprite3d"
+import { BackTextureTransform, Sprite3d, Sprite3dFaces } from "./projection/proj3d/Sprite3d"
 import { Rectangle } from "@pixi/math"
 import { Texture } from "@pixi/core"
 import { BaseElement, BaseElementConfig, BlendMode } from "./BaseElement"
@@ -11,6 +11,7 @@ export interface Sprite3dElementConfig extends BaseElementConfig<"sprite-3d", Sp
 	backImage?: Texture | string
 	tint?: number
 	blendMode?: BlendMode
+	faces?: "both" | "front" | "back" | "none"
 	mirrorBackImage?: "vertical" | "horizontal"
 }
 
@@ -33,6 +34,9 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 		}
 		if (config.mirrorBackImage) {
 			this.mirrorBackImage = config.mirrorBackImage
+		}
+		if (config.faces) {
+			this.faces = config.faces
 		}
 	}
 
@@ -119,6 +123,36 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 			this.handle.backTextureTransform = BackTextureTransform.MIRROR_HORIZONTAL
 		} else {
 			this.handle.backTextureTransform = BackTextureTransform.NONE
+		}
+	}
+
+	public get faces() {
+		const faces = this.handle.faces
+		switch (faces) {
+			case Sprite3dFaces.NONE:
+				return "none"
+			case Sprite3dFaces.FRONT:
+				return "front"
+			case Sprite3dFaces.BACK:
+				return "back"
+			default:
+				return "both"
+		}
+	}
+
+	public set faces(value: "none" | "front" | "back" | "both") {
+		switch (value) {
+			case "none":
+				this.handle.faces = Sprite3dFaces.NONE
+				break
+			case "front":
+				this.handle.faces = Sprite3dFaces.FRONT
+				break
+			case "back":
+				this.handle.faces = Sprite3dFaces.BACK
+				break
+			default:
+				this.handle.faces = Sprite3dFaces.BOTH
 		}
 	}
 

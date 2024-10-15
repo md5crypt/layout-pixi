@@ -8,23 +8,37 @@ export const enum BackTextureTransform {
 	MIRROR_HORIZONTAL
 }
 
+export const enum Sprite3dFaces {
+	NONE = 0,
+	FRONT = 1,
+	BACK = 2,
+	BOTH = 3
+}
+
 export class Sprite3d extends Sprite {
 	declare transform: Transform3d
 	private _culledByFrustrum: boolean
+	private _backUvs!: Float32Array
+	private _frontUvs!: Float32Array
+	private _backTextureID: number
 
-	public frontTexture: Texture
-	public backTexture: Texture | null
+	private _frontTexture: Texture
+	private _backTexture: Texture | null
 
-	public backTextureTransform: BackTextureTransform
+	private _backTextureTransform: BackTextureTransform
+
+	public faces: Sprite3dFaces
 
 	constructor(texture: Texture) {
 		super(texture)
 		this.transform = new Transform3d()
 		this.vertexData = new Float32Array(12)
+		this._backTextureID = 0
 		this._culledByFrustrum = false
-		this.frontTexture = texture
-		this.backTexture = null
-		this.backTextureTransform = BackTextureTransform.NONE
+		this._frontTexture = texture
+		this._backTexture = null
+		this._backTextureTransform = BackTextureTransform.NONE
+		this.faces = Sprite3dFaces.BOTH
 	}
 
 	isFrontFace(forceUpdate = false): boolean {
@@ -45,25 +59,25 @@ export class Sprite3d extends Sprite {
 
 	calculateVertices() {
 		const frontFace = this.transform.worldTransform3d.isFrontFace()
-		const texture = this.backTexture && !frontFace ? this.backTexture : (this.frontTexture || Texture.EMPTY)
-		if (texture != this._texture) {
-			this._textureID = -1
-			this._textureTrimmedID = -1
-			this._texture = texture
-		}
+		const texture = (frontFace || !this._backTexture) ? this._frontTexture : this._backTexture
 
-		// @ts-expect-error
-		if (this._transformID === this.transform._worldID && this._textureID === texture._updateID) {
+		if ((this.faces & (frontFace ? Sprite3dFaces.FRONT : Sprite3dFaces.BACK)) == 0) {
+			this._culledByFrustrum = true
 			return
 		}
 
-		// update texture UV here, because base texture can be changed without calling `_onTextureUpdate`
-		if (this._textureID !== texture._updateID) {
-			if (!frontFace) {
+		if (frontFace) {
+			if (this._textureID !== texture._updateID) {
+				this._frontUvs = texture._uvs.uvsFloat32
+				this._textureID = texture._updateID
+			}
+			this.uvs = this._frontUvs
+		} else {
+			if (this._backTextureID !== texture._updateID) {
 				const org = texture._uvs.uvsFloat32
-				if (this.backTextureTransform == BackTextureTransform.NONE) {
-					this.uvs = org
-				} else if (this.backTextureTransform == BackTextureTransform.MIRROR_VERTICAL) {
+				if (this._backTextureTransform == BackTextureTransform.NONE) {
+					this._backUvs = org
+				} else if (this._backTextureTransform == BackTextureTransform.MIRROR_VERTICAL) {
 					const uvs = new Float32Array(8)
 					uvs[0] = org[2]
 					uvs[1] = org[3]
@@ -73,7 +87,7 @@ export class Sprite3d extends Sprite {
 					uvs[5] = org[7]
 					uvs[6] = org[4]
 					uvs[7] = org[5]
-					this.uvs = uvs
+					this._backUvs = uvs
 				} else {
 					const uvs = new Float32Array(8)
 					uvs[0] = org[4]
@@ -84,16 +98,22 @@ export class Sprite3d extends Sprite {
 					uvs[5] = org[1]
 					uvs[6] = org[2]
 					uvs[7] = org[3]
-					this.uvs = uvs
+					this._backUvs = uvs
 				}
-			} else {
-				this.uvs = texture._uvs.uvsFloat32
+				this._backTextureID = texture._updateID
 			}
+			this.uvs = this._backUvs
 		}
 
 		// @ts-expect-error
+		if (this._texture === texture && this._transformID === this.transform._worldID) {
+			return
+		}
+
+		this._texture = texture
+
+		// @ts-expect-error
 		this._transformID = this.transform._worldID
-		this._textureID = texture._updateID
 
 		const wt = this.transform.worldTransform3d.mat4
 		const vertexData = this.vertexData
@@ -107,10 +127,17 @@ export class Sprite3d extends Sprite {
 		let h1: number
 
 		if (trim) {
-			w1 = trim.x - (anchor._x * orig.width)
+			if (!frontFace && this._backTextureTransform == BackTextureTransform.MIRROR_VERTICAL) {
+				w1 = (orig.width - trim.width - trim.x) - (anchor._x * orig.width)
+			} else {
+				w1 = trim.x - (anchor._x * orig.width)
+			}
 			w0 = w1 + trim.width
-
-			h1 = trim.y - (anchor._y * orig.height)
+			if (!frontFace && this._backTextureTransform == BackTextureTransform.MIRROR_HORIZONTAL) {
+				h1 = (orig.height - trim.height - trim.y) - (anchor._y * orig.height)
+			} else {
+				h1 = trim.y - (anchor._y * orig.height)
+			}
 			h0 = h1 + trim.height
 		} else {
 			w1 = -anchor._x * orig.width
@@ -191,6 +218,33 @@ export class Sprite3d extends Sprite {
 	}
 
 	get texture() {
-		return this.frontTexture
+		return this._frontTexture
+	}
+
+	set frontTexture(value: Texture) {
+		this._frontTexture = value
+		this._textureID = -1
+	}
+
+	get frontTexture() {
+		return this._frontTexture
+	}
+
+	set backTexture(value: Texture | null) {
+		this._backTexture = value
+		this._backTextureID = -1
+	}
+
+	get backTexture() {
+		return this._backTexture
+	}
+
+	set backTextureTransform(value: BackTextureTransform) {
+		this._backTextureTransform = value
+		this._backTextureID = -1
+	}
+
+	get backTextureTransform() {
+		return this._backTextureTransform
 	}
 }
