@@ -18,6 +18,7 @@ export class ParticleEmitter {
 
 	public emitDuration: number
 	public frequency: number
+	public timeScale: number
 
 	public onEmitterStart?: () => void
 	public onEmitterStop?: () => void
@@ -36,6 +37,7 @@ export class ParticleEmitter {
 		this.waveCount = 0
 		this.emitDuration = -1
 		this.frequency = 0
+		this.timeScale = 1
 		this._destroyed = false
 	}
 
@@ -117,6 +119,7 @@ export class ParticleEmitter {
 	}
 
 	public update(deltaMs: number) {
+		deltaMs *= this.timeScale
 		if (this._pool.count > 0) {
 			for (let i = 0; i < this._updateBehaviorList.length; i += 1) {
 				this._pool.seek(0)

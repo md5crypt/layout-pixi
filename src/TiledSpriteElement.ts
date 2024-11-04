@@ -7,14 +7,12 @@ import { TilingSprite } from "@pixi/sprite-tiling"
 export interface TiledSpriteElementConfig extends BaseElementConfig<"sprite-tiled", TiledSpriteElement> {
 	image?: Texture | string
 	tint?: number
-	scaling?: "width" | "height" | "none"
 	clampMargin?: number
 	roundPixels?: boolean
 	blendMode?: BlendMode
 }
 
 export class TiledSpriteElement extends BaseElement<TilingSprite> {
-	private _scaling: "width" | "height" | "none"
 
 	public static register(factory: PixiLayoutFactory) {
 		factory.register("sprite-tiled", config => new this(factory, config, new TilingSprite(factory.resolveAsset(config.image))))
@@ -22,12 +20,8 @@ export class TiledSpriteElement extends BaseElement<TilingSprite> {
 
 	protected constructor(factory: PixiLayoutFactory, config: TiledSpriteElementConfig, handle: TilingSprite) {
 		super(factory, config, handle)
-		this._scaling = "none"
 		if (config.tint !== undefined) {
 			this.handle.tint = config.tint
-		}
-		if (config.scaling) {
-			this._scaling = config.scaling
 		}
 		if (config.clampMargin !== undefined) {
 			this.clampMargin = config.clampMargin
@@ -76,15 +70,6 @@ export class TiledSpriteElement extends BaseElement<TilingSprite> {
 		this.handle.roundPixels = value
 	}
 
-	public set scaling(value: "none" | "width" | "height") {
-		this._scaling = value
-		this.setDirty()
-	}
-
-	public get scaling() {
-		return this._scaling
-	}
-
 	public set clampMargin(value: number) {
 		this.handle.clampMargin = value
 	}
@@ -94,24 +79,13 @@ export class TiledSpriteElement extends BaseElement<TilingSprite> {
 	}
 
 	protected onUpdate() {
+		const width = this.computedWidth
+		const height = this.computedHeight
+		this.handle.width = width
+		this.handle.height = height
 		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
-		this.handle.anchor.set(this._xPivot, this._yPivot)
-		let scale = 1
-		if (this.scaling == "width") {
-			scale = this.computedWidth / this.handle.texture.width
-			this.handle.scale.set(scale * this._scale)
-			this.handle.width = this.handle.texture.width
-			this.handle.height = this.computedHeight / scale
-		} else if (this.scaling == "height") {
-			scale = this.computedHeight / this.handle.texture.height
-			this.handle.scale.set(scale * this._scale)
-			this.handle.width = this.computedWidth / scale
-			this.handle.height = this.handle.texture.height
-		} else {
-			this.handle.scale.set(this._scale)
-			this.handle.width = this.computedWidth
-			this.handle.height = this.computedHeight
-		}
+		this.handle.pivot.set(width * this._xPivot, height * this._yPivot)
+		this.handle.scale.set(this._scale)
 		this.applyFlip()
 	}
 

@@ -362,4 +362,8 @@ export class EventSystem extends EventEmitter {
 		this._cursorControl = value
 		this.setCursorMode(value, this._cursor)
 	}
+
+	public get cursorCurrent() {
+		return this._lastCursor
+	}
 }

@@ -336,11 +336,11 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 			scale[1] * this._scale
 		)
 
-		this.handle.pivot.set(computedWidth * this._xPivot - xOffset / scale[0], computedHeight * this._yPivot - yOffset / scale[1])
+		this.handle.pivot.set((computedWidth * this._xPivot - xOffset) / scale[0], (computedHeight * this._yPivot - yOffset) / scale[1])
 		this.applyFlip()
 		this.handle.position.set(
-			this.computedLeft + this._scale * scale[0] * this._xPivot * this.computedWidth,
-			this.computedTop + this._scale * scale[1] * this._yPivot * this.computedHeight
+			this.computedLeft + this._scale * this._xPivot * this.computedWidth,
+			this.computedTop + this._scale * this._yPivot * this.computedHeight
 		)
 	}
 
