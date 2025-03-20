@@ -6,4 +6,6 @@ export interface SdfTextStyle {
 	align: "left" | "center" | "right" | "justify"
 	lineSpacing: number
 	letterSpacing: number
+	thickness: number
+	slant: number
 }

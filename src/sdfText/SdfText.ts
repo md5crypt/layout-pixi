@@ -1,6 +1,6 @@
 import { Renderer, Texture, BaseTexture } from "@pixi/core"
 import { DisplayObject, IDestroyOptions } from "@pixi/display"
-import { Rectangle } from "@pixi/math"
+import { Rectangle, groupD8 } from "@pixi/math"
 import { BBParser, Ascii, RichText, RichTextChar } from "./BBParser"
 import { SdfFontData, SdfFontCharData } from "./SdfFontData"
 import { SdfTextConstants, SdfTextRenderer, SdfTextRenderObject } from "./SdfTextRenderer"
@@ -56,7 +56,9 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 		lineSpacing: 0,
 		fontName: "default",
 		fontSize: 12,
-		fontScale: 1
+		fontScale: 1,
+		thickness: 1,
+		slant: 0
 	}
 
 	private static getLine() {
@@ -90,21 +92,25 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 			const char = data.chars[i] as InternalSdfFontCharData
 			char.kerning = null
 			const texture = textures[char.page]
+			let xFrame = 0
+			let yFrame = 0
+			if (!texture.noFrame) {
+				xFrame = texture.frame.x
+				yFrame = texture.frame.y
+			}
 			char.texture = (char.width > 0 && char.height > 0) ? new Texture(
 				texture.baseTexture,
+				char.rotated ? new Rectangle(char.x + xFrame, char.y + yFrame, char.height, char.width) : new Rectangle(char.x + xFrame, char.y + yFrame, char.width, char.height),
 				new Rectangle(
-					char.x + texture.frame.x,
-					char.y + texture.frame.y,
+					0,
+					0,
 					char.width,
 					char.height
 				),
-				new Rectangle(
-					0,
-					0,
-					char.width,
-					char.height
-				)
+				undefined,
+				char.rotated ? groupD8.S : 0
 			) : null
+			char.texture?.updateUvs()
 			charMap.set(char.id, char)
 		}
 		for (const kerning of data.kernings) {
@@ -186,7 +192,7 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 		let xOffset = 0
 		let yOffset = 0
 		let lastSymbol = 0
-		let lastBreakPos = 0
+		let lastBreakPos = -1
 		let boxWidth = 0
 		let currentLine = SdfText.getLine()
 
@@ -391,44 +397,51 @@ export class SdfText extends DisplayObject implements SdfTextRenderObject {
 			const w1 = char.x
 			const w0 = w1 + char.width
 
+			const slant = char.style.slant * char.height
+
 			const h1 = char.y
 			const h0 = h1 + char.height
 
 			const textureUid = char.textureUid
+			const thickness = (2 - char.style.thickness) * 0.5
 
-			fVertexData[offset + 0] = (a * w1) + (c * h1) + tx
-			fVertexData[offset + 1] = (d * h1) + (b * w1) + ty
+			fVertexData[offset + 0] = (a * (w1 + slant)) + (c * h1) + tx
+			fVertexData[offset + 1] = (d * h1) + (b * (w1 + slant)) + ty
 			fVertexData[offset + 2] = uvs[0]
 			fVertexData[offset + 3] = uvs[1]
 			fVertexData[offset + 4] = distance
 			fVertexData[offset + 5] = textureUid
-			iVertexData[offset + 6] = color
+			fVertexData[offset + 6] = thickness
+			iVertexData[offset + 7] = color
 
-			fVertexData[offset + 7] = (a * w0) + (c * h1) + tx
-			fVertexData[offset + 8] = (d * h1) + (b * w0) + ty
-			fVertexData[offset + 9] = uvs[2]
-			fVertexData[offset + 10] = uvs[3]
-			fVertexData[offset + 11] = distance
-			fVertexData[offset + 12] = textureUid
-			iVertexData[offset + 13] = color
+			fVertexData[offset + 8] = (a * (w0 + slant)) + (c * h1) + tx
+			fVertexData[offset + 9] = (d * h1) + (b * (w0 + slant)) + ty
+			fVertexData[offset + 10] = uvs[2]
+			fVertexData[offset + 11] = uvs[3]
+			fVertexData[offset + 12] = distance
+			fVertexData[offset + 13] = textureUid
+			fVertexData[offset + 14] = thickness
+			iVertexData[offset + 15] = color
 
-			fVertexData[offset + 14] = (a * w0) + (c * h0) + tx
-			fVertexData[offset + 15] = (d * h0) + (b * w0) + ty
-			fVertexData[offset + 16] = uvs[4]
-			fVertexData[offset + 17] = uvs[5]
-			fVertexData[offset + 18] = distance
-			fVertexData[offset + 19] = textureUid
-			iVertexData[offset + 20] = color
+			fVertexData[offset + 16] = (a * w0) + (c * h0) + tx
+			fVertexData[offset + 17] = (d * h0) + (b * w0) + ty
+			fVertexData[offset + 18] = uvs[4]
+			fVertexData[offset + 19] = uvs[5]
+			fVertexData[offset + 20] = distance
+			fVertexData[offset + 21] = textureUid
+			fVertexData[offset + 22] = thickness
+			iVertexData[offset + 23] = color
 
-			fVertexData[offset + 21] = (a * w1) + (c * h0) + tx
-			fVertexData[offset + 22] = (d * h0) + (b * w1) + ty
-			fVertexData[offset + 23] = uvs[6]
-			fVertexData[offset + 24] = uvs[7]
-			fVertexData[offset + 25] = distance
-			fVertexData[offset + 26] = textureUid
-			iVertexData[offset + 27] = color
+			fVertexData[offset + 24] = (a * w1) + (c * h0) + tx
+			fVertexData[offset + 25] = (d * h0) + (b * w1) + ty
+			fVertexData[offset + 26] = uvs[6]
+			fVertexData[offset + 27] = uvs[7]
+			fVertexData[offset + 28] = distance
+			fVertexData[offset + 29] = textureUid
+			fVertexData[offset + 30] = thickness
+			iVertexData[offset + 31] = color
 
-			offset += 28
+			offset += 32
 		}
 
 		this._vertexDataSize = offset

@@ -130,6 +130,16 @@ export class BBParser {
 							currentStyle.align = value as "left"
 						}
 						break
+					case "thickness":
+						if (value) {
+							currentStyle.thickness = parseFloat(value)
+						}
+						break
+					case "slant":
+						if (value) {
+							currentStyle.slant = parseFloat(value)
+						}
+						break
 					default:
 						console.warn("invalid bb tag: ", match[0])
 				}

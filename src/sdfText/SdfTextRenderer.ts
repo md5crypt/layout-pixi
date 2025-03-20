@@ -13,14 +13,15 @@ export interface SdfTextRenderObject {
 export const enum SdfTextConstants {
 	INDICES_PER_QUAD = 6,
 	VERTICES_PER_QUAD = 4,
-	WORDS_PER_VERTEX = 7,
+	WORDS_PER_VERTEX = 8,
 	WORDS_PER_QUAD = VERTICES_PER_QUAD * WORDS_PER_VERTEX,
 	STRIDE = WORDS_PER_VERTEX * 4,
 	POS_VERTEX_POSITION = 0,
 	POS_TEXTURE_COORD = 2,
 	POS_F_WIDTH = 4,
 	POS_TEXTURE_ID = 5,
-	POS_COLOR = 6
+	POS_THICKNESS = 6,
+	POS_COLOR = 7
 }
 
 class SdfTextGeometry extends Geometry {
@@ -33,6 +34,7 @@ class SdfTextGeometry extends Geometry {
 			.addAttribute("aTextureCoord", buffer, 2, false, TYPES.FLOAT, SdfTextConstants.STRIDE, SdfTextConstants.POS_TEXTURE_COORD * 4)
 			.addAttribute("aFWidth", buffer, 1, false, TYPES.FLOAT, SdfTextConstants.STRIDE, SdfTextConstants.POS_F_WIDTH * 4)
 			.addAttribute("aTextureId", buffer, 1, false, TYPES.FLOAT, SdfTextConstants.STRIDE, SdfTextConstants.POS_TEXTURE_ID * 4)
+			.addAttribute("aThickness", buffer, 1, false, TYPES.FLOAT, SdfTextConstants.STRIDE, SdfTextConstants.POS_THICKNESS * 4)
 			.addAttribute("aColor", buffer, 4, true, TYPES.UNSIGNED_BYTE, SdfTextConstants.STRIDE, SdfTextConstants.POS_COLOR * 4)
 			.addIndex(indexBuffer)
 	}

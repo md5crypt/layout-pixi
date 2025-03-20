@@ -1,4 +1,3 @@
-import { Ticker } from "@pixi/ticker"
 import { Container, DisplayObject } from "@pixi/display"
 import type { ExtensionMetadata, Renderer } from "@pixi/core"
 import { ExtensionType } from "@pixi/core"
@@ -52,8 +51,6 @@ export class EventSystem extends EventEmitter {
 		]
 	}
 
-	public static useGlobalTicker = true
-	public static globalTickerPriority = 100
 	private static _point = new Point(0, 0)
 
 	private static treeWalk(displayObject: DisplayObject & {containsPoint?: (point: Point) => boolean}, point: Point, callback: (displayObject: DisplayObject) => void) {
@@ -100,14 +97,14 @@ export class EventSystem extends EventEmitter {
 	private _lastMoveEvent: PixiEvent | null
 	private _lastEvent: PixiEvent | null
 	private _trackingData: Map<number, TrackingData>
-
-	private _tickerUpdate?: () => void
+	private _captureTouchEvents: boolean
 
 	public constructor(renderer: Renderer) {
 		super()
 		this.renderer = renderer
 		this.autoPreventDefault = false
 		this.queueEvents = true
+		this._captureTouchEvents = true
 		this._pointerMoved = false
 		this._lastMoveEvent = null
 		this._lastEvent = null
@@ -129,12 +126,12 @@ export class EventSystem extends EventEmitter {
 				if (!lastObjectRendered) {
 					this._capturedEvents.push(pixiEvent)
 				} else {
+					this._lastEvent = pixiEvent
 					this.processEvent(pixiEvent, lastObjectRendered)
 					if (pixiEvent.__type == "pointermove") {
 						this._pointerMoved = true
 						this._lastMoveEvent = pixiEvent
 					}
-					this._lastEvent = pixiEvent
 				}
 			}
 		}
@@ -148,11 +145,6 @@ export class EventSystem extends EventEmitter {
 		view.addEventListener("pointerdown", this.handleEvent, options)
 		globalThis.addEventListener("pointercancel", this.handleEvent, options)
 		globalThis.addEventListener("pointerup", this.handleEvent, options)
-
-		if (EventSystem.useGlobalTicker) {
-			this._tickerUpdate = () => this.update()
-			Ticker.system.add(this._tickerUpdate, undefined, EventSystem.globalTickerPriority)
-		}
 	}
 
 	private getTrackingData(event: PixiEvent) {
@@ -311,15 +303,13 @@ export class EventSystem extends EventEmitter {
 	}
 
 	public destroy() {
-		if (this._tickerUpdate) {
-			Ticker.system.remove(this._tickerUpdate)
-			this._tickerUpdate = undefined
-		}
 		const view = this.renderer.view
 		view.style.removeProperty("touch-action")
+		view.style.removeProperty("cursor")
 
 		const options = { capture: true, passive: false }
 		document.removeEventListener("pointermove", this.handleEvent, options)
+		document.removeEventListener("wheel", this.handleEvent, options)
 		view.removeEventListener("pointerdown", this.handleEvent, options)
 		globalThis.removeEventListener("pointercancel", this.handleEvent, options)
 		globalThis.removeEventListener("pointerup", this.handleEvent, options)
@@ -333,7 +323,7 @@ export class EventSystem extends EventEmitter {
 			this.renderer.view.style.cursor = this._lastCursor
 		} else {
 			this._lastCursor = ""
-			this.renderer.view.removeAttribute("cursor")
+			this.renderer.view.style.removeProperty("cursor")
 		}
 	}
 
@@ -365,5 +355,14 @@ export class EventSystem extends EventEmitter {
 
 	public get cursorCurrent() {
 		return this._lastCursor
+	}
+
+	public get captureTouchEvents() {
+		return this._captureTouchEvents
+	}
+
+	public set captureTouchEvents(value: boolean) {
+		this._captureTouchEvents = value
+		this.renderer.view.style.touchAction = value ? "none" : "auto"
 	}
 }
