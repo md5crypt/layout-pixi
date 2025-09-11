@@ -53,8 +53,8 @@ export class Camera3d extends Container {
 	}
 
 	public set orthographic(value: boolean) {
-		if (this.orthographic != value) {
-			this.orthographic = value
+		if (this._orthographic != value) {
+			this._orthographic = value
 		}
 		this.updatePlanes()
 	}
