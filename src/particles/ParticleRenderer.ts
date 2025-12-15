@@ -221,6 +221,7 @@ export class ParticleRenderer extends ObjectRenderer {
 
 		if (offset == 0) {
 			// nothing to do!
+			this._batchedContainers = []
 			return
 		}
 
