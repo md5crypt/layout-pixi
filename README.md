@@ -14,7 +14,7 @@ The following layout elements are available:
 | sprite-sliced | `SlicedSpriteElement` | a 9-slice mesh element | 
 | sprite-tiling | `TiledSpriteElement` | allows drawing repeated backgrounds | 
 | text | `TextElement` | renders text using `PIXI.Text` |
-| - | `RootElement` | meant to be used as the layout root element |
+| root | `RootElement` | meant to be used as the layout root element |
 
 ## BaseElement
 
@@ -238,9 +238,9 @@ Text fitting operates in two modes:
 class RootElement extends BaseElement
 ```
 
-The RootElement class is meant to be used as the layout root. **It can not be crated via the factory** and is meant to be crated by its constructor.
+The RootElement class is meant to be used as the layout root.
 
-RootElement has a pre-configured layout config of `volatile = true`, a hardcoded name `@root` and type equal to `root`.
+RootElement takes a regular element config, there are no hardcoded values. Unlike `ContainerElement` it only applies `scale` to the underlying PIXI object when updated, position, pivot and masking are not applied.
 
 Note that RootElement **does not have to be used as the root element**. For example a `ContainerElement` will do just as well.
 
@@ -249,12 +249,12 @@ Note that RootElement **does not have to be used as the root element**. For exam
 | filed | type | description |
 |:---|:---:|:---|
 | handle | `PIXI.Container` | **(readonly)** reference to the underlying PIXI object.
-| scale | `boolean` | sets the base scale for the entire layout |
+| scale | `number` | sets the base scale for the entire layout |
 
 ### Function reference
 | name | signature | description |
 |:---|:---:|:---|
-| constructor | `(factory: LayoutFactory, config?: BaseConfig) => RootElement` | the intended way of creating a RootElement instance |
+| constructor | `(factory: PixiLayoutFactory, config: RootElementConfig) => RootElement` | creates a RootElement directly, bypassing the factory |
 
 # Layout factory
 

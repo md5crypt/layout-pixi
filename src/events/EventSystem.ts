@@ -277,7 +277,7 @@ export class EventSystem extends EventEmitter {
 						tapSet.clear()
 					}
 					this.emit("pointerup", event)
-					this.emit("pointetap", event)
+					this.emit("pointertap", event)
 				}
 				break
 			}

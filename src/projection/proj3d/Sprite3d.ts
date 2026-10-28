@@ -90,14 +90,14 @@ export class Sprite3d extends Sprite {
 					this._backUvs = uvs
 				} else {
 					const uvs = new Float32Array(8)
-					uvs[0] = org[4]
-					uvs[1] = org[5]
-					uvs[2] = org[6]
-					uvs[3] = org[7]
-					uvs[4] = org[0]
-					uvs[5] = org[1]
-					uvs[6] = org[2]
-					uvs[7] = org[3]
+					uvs[0] = org[6]
+					uvs[1] = org[7]
+					uvs[2] = org[4]
+					uvs[3] = org[5]
+					uvs[4] = org[2]
+					uvs[5] = org[3]
+					uvs[6] = org[0]
+					uvs[7] = org[1]
 					this._backUvs = uvs
 				}
 				this._backTextureID = texture._updateID
@@ -224,6 +224,9 @@ export class Sprite3d extends Sprite {
 	set frontTexture(value: Texture) {
 		this._frontTexture = value
 		this._textureID = -1
+		if (!this._backTexture) {
+			this._backTextureID = -1
+		}
 	}
 
 	get frontTexture() {

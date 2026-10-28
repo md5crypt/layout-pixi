@@ -49,12 +49,9 @@ export class Sprite3dElement extends BaseElement<Sprite3d> {
 		const yScale = computedHeight / texture.height
 
 		this.handle.scale.set(xScale * this._scale, yScale * this._scale)
-		this.handle.pivot.set(computedWidth * this._xPivot, computedHeight * this._yPivot)
+		this.handle.pivot.set(texture.width * this._xPivot, texture.height * this._yPivot)
 		this.applyFlip()
-		this.handle.position.set(
-			this.computedLeft + this._scale * xScale * this._xPivot * this.computedWidth,
-			this.computedTop + this._scale * yScale * this._yPivot * this.computedHeight
-		)
+		this.handle.position.set(this.pivotedLeft, this.pivotedTop)
 		if (this.handle.interactive) {
 			this.handle.hitArea = new Rectangle(
 				0,

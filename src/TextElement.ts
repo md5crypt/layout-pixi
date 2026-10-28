@@ -15,13 +15,13 @@ export interface TextElementConfig extends BaseElementConfig<"text", TextElement
 
 class PatchedText extends Text {
 	private _masterResolution = 1
-	private _resolutionCache = 1
+	private _resolutionCache = -1
 
 	updateTransform() {
 		const transform = this.parent.transform.worldTransform
 		const resolution = this._masterResolution * Math.sqrt(transform.a * transform.a + transform.b * transform.b)
-		if (this._resolutionCache != this._masterResolution) {
-			this._resolutionCache = resolution * this._masterResolution
+		if (this._resolutionCache != resolution) {
+			this._resolutionCache = resolution
 			super.resolution = resolution
 		}
 		super.updateTransform()
@@ -110,10 +110,16 @@ export class TextElement extends BaseElement<Text> {
 	}
 
 	public get contentHeight() {
+		if (this._textRect == null) {
+			this.redraw()
+		}
 		return this._textRect![1]
 	}
 
 	public get contentWidth() {
+		if (this._textRect == null) {
+			this.redraw()
+		}
 		return this._textRect![0]
 	}
 

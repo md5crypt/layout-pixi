@@ -18,6 +18,7 @@ export class ContainerElement<HANDLE extends Container = Container> extends Base
 
 	private _mask: boolean
 	private _maskObject?: Sprite | Graphics
+	private _maskShape?: Graphics
 
 	protected constructor(factory: PixiLayoutFactory, config: ContainerElementConfig<any, any>, handle: HANDLE) {
 		super(factory, config, handle)
@@ -53,7 +54,7 @@ export class ContainerElement<HANDLE extends Container = Container> extends Base
 	}
 
 	public get mask() {
-		return this.handle.mask != null
+		return this._mask
 	}
 
 	public set mask(value: boolean) {
@@ -105,7 +106,13 @@ export class ContainerElement<HANDLE extends Container = Container> extends Base
 			if (this._maskObject) {
 				this.handle.mask = this._maskObject
 			} else {
-				const graphics = new Graphics()
+				let graphics = this._maskShape
+				if (!graphics) {
+					graphics = new Graphics()
+					this._maskShape = graphics
+				} else {
+					graphics.clear()
+				}
 				graphics.beginFill(0xFFFFFF)
 				graphics.drawRect(0, 0, width, height)
 				graphics.endFill()

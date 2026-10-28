@@ -195,26 +195,32 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 				)
 			)
 		} else {
-			const origRect = (texture.rotate & (groupD8.S | groupD8.N)) ? [rect[1], rect[0], rect[3], rect[2]] : rect
+			const orig = texture.orig
+			const trim = texture.trim || new Rectangle(0, 0, orig.width, orig.height)
+			const left = Math.min(trim.width, Math.max(0, rect[0] - trim.x))
+			const top = Math.min(trim.height, Math.max(0, rect[1] - trim.y))
+			const right = Math.min(trim.width - left, Math.max(0, rect[2] - (orig.width - trim.x - trim.width)))
+			const bottom = Math.min(trim.height - top, Math.max(0, rect[3] - (orig.height - trim.y - trim.height)))
+			const frameRect = (texture.rotate & (groupD8.S | groupD8.N)) ? [bottom, left, top, right] : [left, top, right, bottom]
 			this.handle.texture = new Texture(
 				texture.baseTexture,
 				new Rectangle(
-					texture.frame.x + origRect[0],
-					texture.frame.y + origRect[1],
-					texture.frame.width - origRect[0] - origRect[2],
-					texture.frame.height - origRect[1] - origRect[3]
+					texture.frame.x + frameRect[0],
+					texture.frame.y + frameRect[1],
+					texture.frame.width - frameRect[0] - frameRect[2],
+					texture.frame.height - frameRect[1] - frameRect[3]
 				),
 				new Rectangle(
 					0,
 					0,
-					texture.orig.width - rect[0] - rect[2],
-					texture.orig.height - rect[1] - rect[3]
+					orig.width - rect[0] - rect[2],
+					orig.height - rect[1] - rect[3]
 				),
 				new Rectangle(
-					texture.trim.x,
-					texture.trim.y,
-					texture.trim.width - rect[0] - rect[2],
-					texture.trim.height - rect[1] - rect[3]
+					Math.max(0, trim.x - rect[0]),
+					Math.max(0, trim.y - rect[1]),
+					trim.width - left - right,
+					trim.height - top - bottom
 				),
 				texture.rotate
 			)
@@ -326,8 +332,8 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 				isSliced = true
 				break
 			default:
-				xOffset += (computedHeight - this._texture.height) * this._yAlign
-				yOffset += (computedWidth - this._texture.width) * this._yAlign
+				xOffset += (computedWidth - this._texture.width) * this._xAlign
+				yOffset += (computedHeight - this._texture.height) * this._yAlign
 				break
 		}
 		this.handle.isSliced = isSliced
@@ -345,11 +351,11 @@ export class SpriteElement<HANDLE extends SpriteSliced = SpriteSliced> extends B
 	}
 
 	public get contentHeight() {
-		return this.handle.texture.height
+		return this._texture.height
 	}
 
 	public get contentWidth() {
-		return this.handle.texture.width
+		return this._texture.width
 	}
 }
 

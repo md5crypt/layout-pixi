@@ -32,7 +32,7 @@ export function Fragment(props: {children?: ReactNode}) {
 }
 
 export function Slot(props: {name: string, children?: ReactNode}) {
-	return {type: "jsx-slot" as any, config: {name: props.name}, children: props.children || []} as JSX.Element
+	return {type: "jsx-slot" as any, name: props.name, children: props.children || []} as JSX.Element
 }
 
 export function isFragment(data: JSX.Element) {
@@ -63,7 +63,7 @@ export function createElement<T extends IntrinsicElementNames | ComponentFunctio
 		}
 	}
 	if (typeof type == "string") {
-		const result = props as PixiElementConfig
+		const result = (props || {}) as PixiElementConfig
 		result.type = type
 		result.children = children as PixiElementConfig[]
 		return result

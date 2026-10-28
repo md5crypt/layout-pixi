@@ -5,7 +5,7 @@ import type { PixiLayoutFactory } from "./PixiLayoutFactory"
 import { Camera3d } from "./projection/proj3d/Camera3d"
 
 export interface CameraElementConfig extends ContainerElementConfig<"camera", CameraElement> {
-	position3d?: {x?: number, y?: number, z?: number}
+	position3d?: {z: number}
 	focus?: number
 	near?: number
 	far?: number
@@ -54,6 +54,9 @@ export class CameraElement extends ContainerElement<Camera3d> {
 				this._projectionAnchorX = config.projectionAnchor[0]
 				this._projectionAnchorY = config.projectionAnchor[1]
 			}
+		}
+		if (config.position3d !== undefined) {
+			this.handle.position3d.z = config.position3d.z
 		}
 	}
 
